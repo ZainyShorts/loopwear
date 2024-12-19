@@ -1,0 +1,86 @@
+/* Nav.css */
+
+/* Container styles */
+.nav-container {
+    max-width: 90%; /* Make the nav a bit smaller */
+    margin: 0 auto;
+    padding: 1rem 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  /* Logo styles */
+  .nav-logo {
+    width: 8rem; /* Make the logo a bit smaller */
+    height: auto;
+  }
+  
+  /* Button styles */
+  .nav-button {
+    background-color: #4CAF50; /* Green color for the button */
+    color: #ffffff;
+    border: none;
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  .nav-button:hover {
+    background-color: #45a049; /* Darker green for hover effect */
+  }
+  
+  /* Menu button styles */
+  .nav-menu-button {
+    display: none;
+  }
+  
+  @media (max-width: 768px) {
+    .nav-menu-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 2.5rem;
+      height: 2.5rem;
+      background-color: transparent;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+  
+    .nav-menu-button:hover {
+      background-color: #f1f5f9; /* Light grey for hover effect */
+    }
+  }
+  
+  /* Menu styles */
+  .nav-menu {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+
+  }
+  
+  @media (max-width: 768px) {
+    .nav-menu {
+      display: none;
+    }
+  }
+  
+  /* Menu item styles */
+  .nav-menu-item {
+    color: #333333; /* Dark grey color for menu items */
+    padding: 0.5rem 1rem;
+    margin-right: 1rem;
+    border-radius: 0.25rem;
+    transition: color 0.3s ease;
+  }
+  
+  .nav-menu-item:hover {
+    color: #4CAF50; /* Green color for hover effect */
+  }
+ 
+  
