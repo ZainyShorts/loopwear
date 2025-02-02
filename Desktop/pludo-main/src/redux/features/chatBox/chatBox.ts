@@ -27,4 +27,4 @@ export const productSlice = createSlice({
 
 export const { toggleSidebar } = productSlice.actions;
 
-export default productSlice.reducer;
+export default productSlice.reducer
