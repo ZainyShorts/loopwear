@@ -1,0 +1,24 @@
+{
+  "name": "twilio-test",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.7.9",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
+    "imap-simple": "^5.1.0",
+    "jszip": "^3.10.1",
+    "mailparser": "^3.7.2",
+    "openai": "^4.82.0",
+    "twilio": "^5.3.6",
+    "ws": "^8.18.0",
+    "xmlbuilder": "^15.1.1"
+  }
+}
