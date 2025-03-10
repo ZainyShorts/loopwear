@@ -116,8 +116,8 @@ export default function Home() {
 
       <FilterSheet open={showFilters} onOpenChange={setShowFilters} />
 
-      <hr className="mx-16" />
-      <div className="bg-[#F6E7DB] px-24 p-6 ">
+      <hr className="md:mx-16" />
+      <div className="bg-[#F6E7DB]  md:px-24 p-6 ">
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {products.filter((p: any) => p.action.toLowerCase() == type).map((product) => (
             <ClothingCard

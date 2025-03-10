@@ -5,7 +5,7 @@ import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
-import { useToast } from "@/components/ui/use-toast"
+import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 
 interface CheckoutProps {
@@ -18,7 +18,7 @@ interface CheckoutProps {
 export function BuyNowCheckout({ productImage, productTitle, rentAmount, onCheckout }: CheckoutProps) {
   const [paymentMethod, setPaymentMethod] = React.useState("cod")
   const [loading, setLoading] = React.useState(false)
-  const { toast } = useToast()
+  const router = useRouter()
 
   const shippingCost = 0
   const subTotal = rentAmount + shippingCost
@@ -27,16 +27,9 @@ export function BuyNowCheckout({ productImage, productTitle, rentAmount, onCheck
     try {
       setLoading(true)
       await onCheckout?.(paymentMethod)
-      toast({
-        title: "Success",
-        description: "Your order has been placed successfully!",
-      })
+      router.push("/order-summary")
     } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to process your order. Please try again.",
-        variant: "destructive",
-      })
+      console.error("Failed to process order:", error)
     } finally {
       setLoading(false)
     }
