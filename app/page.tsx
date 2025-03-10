@@ -5,30 +5,34 @@ import ProductsSection from "./components/Home/ui/products-section"
 import VideoSection from "./components/Home/ui/video-section"
 import AboutSection from "./components/Home/ui/about-section"
 import LoopWearBanner from "./components/Home/ui/loopwear-banner"
+import TopBanner from "./components/global/top-banner"
+import { logo } from "@/lib/data"
 
 export default function Home() {
   return (
     <>
     <div className="flex flex-col h-screen">
       {/* Top Banner */}
-      <div className="bg-[#6E391D] text-white py-2 text-center h-[69px]">
-        <p className="font-light  text-[20px] leading-[100%] tracking-[0] text-center flex items-center justify-center h-full ">Glad to Have You! Stay Stylish, Spend Smart</p>
-      </div>
+      <TopBanner />
 
       {/* Header */}
       <header className="bg-[#f9f3eb] py-4 px-6 md:px-12 flex justify-between items-center">
         <div className="flex items-center">
           <Link href="/" className="flex items-center">
-            <div className="font-serif italic text-2xl md:text-3xl">Loop</div>
-            <div className="relative  w-24 h-16 ">
+            {/* <div className="font-serif italic text-2xl md:text-3xl">Loop</div>
+            <div className="relative  w-16 h-16 ">
               <Image
-                src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/logo-Eu1OotZteC6CKxqQNm2XtqguH2G4Z7.png"
+                src={logo}
                 alt="Loop Wear Logo"
                 fill
                 className="object-contain h-16 w-16 "
               />
             </div>
-            <div className="font-serif  italic text-2xl md:text-3xl">Wear</div>
+            <div className="font-serif  italic text-2xl md:text-3xl">Wear</div> */}
+            <div className="flex items-center">
+  <span className="text-3xl font-bold">Loop</span><img src={logo} alt="Loop Wear Logo" className="h-16 w-auto"/><span className="text-3xl font-bold">Wear</span>
+</div>
+
           </Link>
         </div>
 
@@ -36,9 +40,9 @@ export default function Home() {
           <button aria-label="Search" className="p-1">
             <Search className="w-5 h-5" />
           </button>
-          <button aria-label="Cart" className="p-1">
+          <Link href={'/cart'} aria-label="Cart" className="p-1">
             <ShoppingCart className="w-5 h-5" />
-          </button>
+          </Link>
           <button className="bg-white border border-[#6d4534] rounded-full px-3 py-1 text-sm flex items-center">
             logout
             <span className="ml-1">👤</span>
@@ -55,17 +59,17 @@ export default function Home() {
             </Link>
           </li>
           <li>
-            <Link href="/renter" className="px-4 py-1 underline">
+            <Link href="/products?type=rent" className="px-4 py-1 underline">
               Renter
             </Link>
           </li>
           <li>
-            <Link href="/lender" className="px-4 py-1 underline ">
+            <Link href="/products?type=buy" className="px-4 py-1 underline ">
               Lender
             </Link>
           </li>
           <li>
-            <Link href="/register" className="px-4 py-1 underline  ">
+            <Link href="/login" className="px-4 py-1 underline  ">
               Register
             </Link>
           </li>

@@ -21,7 +21,7 @@ export default function VideoSection() {
             {isPlaying ? (
               <iframe
               className="w-full h-full"
-              src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&mute=0&controls=0&loop=1&playlist=${videoId}`}
+              src={`https://www.youtube.com/embed/${videoId}?autoplay=1&rel=0&mute=1&controls=0&loop=1&playlist=${videoId}`}
               title="YouTube video"
               allow="autoplay; encrypted-media"
               allowFullScreen
