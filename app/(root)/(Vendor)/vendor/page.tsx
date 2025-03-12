@@ -1,18 +1,36 @@
-'use client'
+"use client"
+import { useEffect, useState } from "react"
 import Image from "next/image"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
-import { Menu, ShoppingBag, Plus, FileText, Store, FolderClosed, BadgeCheck, BringToFront } from "lucide-react"
+import { Menu, ShoppingBag, Plus, FileText, Store, FolderClosed, BadgeCheck, BringToFront, Lock } from "lucide-react"
 import TopBanner from "@/app/components/global/top-banner"
 import { useRouter } from "next/navigation"
 import { logo } from "@/lib/data"
 
 export default function VendorPage() {
+  const router = useRouter()
+  const [hasStore, setHasStore] = useState(false)
 
-    const router = useRouter()
-    function navigate(path:string){
-        router.push(path)
+  useEffect(() => {
+    // Check if user data exists in localStorage
+    const userData = localStorage.getItem("user")
+    if (userData) {
+      try {
+        const user = JSON.parse(userData) 
+        console.log('user',user)
+        // Set hasStore based on user.store value
+        setHasStore(user.storeId)
+      } catch (error) {
+        console.error("Error parsing user data:", error)
+      }
     }
+  }, [])
+
+  function navigate(path: string) {
+    router.push(path)
+  }
+
   return (
     <div className="min-h-screen bg-[#fdf6ef]">
       <TopBanner />
@@ -22,7 +40,7 @@ export default function VendorPage() {
         <div className="flex items-center gap-3">
           <div className="bg-black rounded-full w-14 h-14 flex items-center justify-center overflow-hidden">
             <Image
-              src={logo}
+              src={logo || "/placeholder.svg"}
               alt="Hadeeqa's boutique logo"
               width={56}
               height={56}
@@ -53,21 +71,37 @@ export default function VendorPage() {
               <div className="py-3 px-4 border-b border-[#6b3419]/10">
                 <p className="font-medium text-[#6b3419]">LoopWear</p>
               </div>
-              <DropdownMenuItem onClick={()=>navigate('/products?type=buy')}  className="py-3 px-4 flex items-center gap-2 cursor-pointer hover:bg-[#6b3419]/10 hover:text-[#6b3419] focus:bg-[#6b3419]/10 focus:text-[#6b3419]">
+              <DropdownMenuItem
+                onClick={() => hasStore && navigate("/vendor/products")}
+                disabled={!hasStore}
+                className={`py-3 px-4 flex items-center gap-2 ${hasStore ? "cursor-pointer hover:bg-[#6b3419]/10 hover:text-[#6b3419] focus:bg-[#6b3419]/10 focus:text-[#6b3419]" : "cursor-not-allowed opacity-60"}`}
+              >
+                {!hasStore && <Lock className="h-4 w-4 text-[#6b3419]" />}
                 <ShoppingBag className="h-4 w-4 text-[#6b3419]" />
                 <span>View Products</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={()=>navigate('/add-dress')} className="py-3 px-4 flex items-center gap-2 cursor-pointer hover:bg-[#6b3419]/10 hover:text-[#6b3419] focus:bg-[#6b3419]/10 focus:text-[#6b3419]">
+              <DropdownMenuItem
+                onClick={() => hasStore && navigate("/add-dress")}
+                disabled={!hasStore}
+                className={`py-3 px-4 flex items-center gap-2 ${hasStore ? "cursor-pointer hover:bg-[#6b3419]/10 hover:text-[#6b3419] focus:bg-[#6b3419]/10 focus:text-[#6b3419]" : "cursor-not-allowed opacity-60"}`}
+              >
+                {!hasStore && <Lock className="h-4 w-4 text-[#6b3419]" />}
                 <Plus className="h-4 w-4 text-[#6b3419]" />
                 <span>Add Product</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={()=>navigate('/lender')} className="py-3 px-4 flex items-center gap-2 cursor-pointer hover:bg-[#6b3419]/10 hover:text-[#6b3419] focus:bg-[#6b3419]/10 focus:text-[#6b3419]">
+              <DropdownMenuItem
+                onClick={() => navigate("/lender")}
+                className="py-3 px-4 flex items-center gap-2 cursor-pointer hover:bg-[#6b3419]/10 hover:text-[#6b3419] focus:bg-[#6b3419]/10 focus:text-[#6b3419]"
+              >
                 <FileText className="h-4 w-4 text-[#6b3419]" />
                 <span>Vendor Policy</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={()=>navigate('/create-store')} className="py-3 px-4 flex items-center gap-2 cursor-pointer hover:bg-[#6b3419]/10 hover:text-[#6b3419] focus:bg-[#6b3419]/10 focus:text-[#6b3419]">
+              <DropdownMenuItem
+                onClick={() => navigate("/create-store")}
+                className="py-3 px-4 flex items-center gap-2 cursor-pointer hover:bg-[#6b3419]/10 hover:text-[#6b3419] focus:bg-[#6b3419]/10 focus:text-[#6b3419]"
+              >
                 <Store className="h-4 w-4 text-[#6b3419]" />
-                <span >Create Store</span>
+                <span>Create Store</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -87,8 +121,7 @@ export default function VendorPage() {
           {/* Extra Earning */}
           <div className="bg-white rounded-lg shadow-md p-8 flex flex-col items-center transform transition-transform hover:scale-105">
             <div className="w-24 h-24 mb-6">
-            <BringToFront className="h-24 w-24 text-[#6b3419] mb-6" />
-
+              <BringToFront className="h-24 w-24 text-[#6b3419] mb-6" />
             </div>
             <h3 className="text-xl font-serif text-center mb-4 text-[#6b3419]">Extra Dresses = Extra Earning</h3>
             <p className="text-center text-sm leading-relaxed text-gray-700">
@@ -101,7 +134,7 @@ export default function VendorPage() {
           {/* Closet Space */}
           <div className="bg-white rounded-lg shadow-md p-8 flex flex-col items-center transform transition-transform hover:scale-105">
             <div className="w-24 h-24 mb-6">
-            <FolderClosed className="h-24 w-24 text-[#6b3419] mb-6" />
+              <FolderClosed className="h-24 w-24 text-[#6b3419] mb-6" />
             </div>
             <h3 className="text-xl font-serif text-center mb-4 text-[#6b3419]">Who doesn't love more closet space?</h3>
             <p className="text-center text-sm leading-relaxed text-gray-700">
@@ -113,7 +146,7 @@ export default function VendorPage() {
           {/* Lending Process */}
           <div className="bg-white rounded-lg shadow-md p-8 flex flex-col items-center transform transition-transform hover:scale-105">
             <div className="w-24 h-24 mb-6">
-            <BadgeCheck className="h-24 w-24 text-[#6b3419] mb-6" />
+              <BadgeCheck className="h-24 w-24 text-[#6b3419] mb-6" />
             </div>
             <h3 className="text-xl font-serif text-center mb-4 text-[#6b3419]">Effortless Lending process</h3>
             <p className="text-center text-sm leading-relaxed text-gray-700">
@@ -129,11 +162,15 @@ export default function VendorPage() {
         <div className="bg-[#6b3419]/10 rounded-lg p-8 text-center">
           <h3 className="text-2xl font-serif mb-4 text-[#6b3419]">Ready to start earning?</h3>
           <p className="mb-6 max-w-2xl mx-auto text-gray-700">
-            List your first dress today and join our community of fashion entrepreneurs making extra income from their
-            wardrobe.
+            {!hasStore
+              ? "Create your store first to start listing your dresses and earning extra income."
+              : "List your first dress today and join our community of fashion entrepreneurs making extra income from their wardrobe."}
           </p>
-          <Button className="bg-[#6b3419] hover:bg-[#5a2c15] text-white px-8 py-6 rounded-full text-lg">
-            Add Your First Product
+          <Button
+            className="bg-[#6b3419] hover:bg-[#5a2c15] text-white px-8 py-6 rounded-full text-lg"
+            onClick={() => (hasStore ? navigate("/add-dress") : navigate("/create-store"))}
+          >
+            {hasStore ? "Add Your First Product" : "Create Your Store"}
           </Button>
         </div>
       </div>

@@ -17,6 +17,8 @@ const formSchema = z.object({
   ownerName: z.string().min(2, "Owner name is required"),
   email: z.string().email("Invalid email address"),
   phone: z.string().min(10, "Valid phone number is required"),
+  bankName: z.string().min(1, "Bank name is required"),
+  accountNumber: z.string().min(1, "Account number is required"),
   accountDetails: z.string().min(1, "Account details are required"),
   agreeToTerms: z.boolean().refine((val) => val === true, {
     message: "You must agree to the terms and conditions",
@@ -34,7 +36,8 @@ export function CreateStoreForm() {
     handleSubmit,
     formState: { errors },
     setValue,
-    watch,
+    watch, 
+    reset, 
   } = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -44,16 +47,83 @@ export function CreateStoreForm() {
 
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     try {
-      setLoading(true)
-      console.log("Form data:", data)
-      // Show modal instead of toast
-      setIsModalOpen(true)
+      setLoading(true);
+      
+      let storeLogoUrl = "";
+  
+      if (logoFile) {
+        const formData = new FormData();
+        formData.append("file", logoFile);
+        formData.append("upload_preset", process.env.NEXT_PUBLIC_PRESET_NAME || "loopwear");
+  
+        const cloudinaryResponse = await fetch(
+          `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUD_NAME || "diml90c1y"}/image/upload`,
+          {
+            method: "POST",
+            body: formData,
+          }
+        );
+  
+        const cloudinaryData = await cloudinaryResponse.json();
+        console.log("Cloudinary response:", cloudinaryData);
+  
+        if (cloudinaryData.secure_url) {
+          storeLogoUrl = cloudinaryData.secure_url;
+        } else {
+          throw new Error("Failed to upload image to Cloudinary");
+        }
+      }
+  
+      const user = localStorage.getItem("user");  
+      let parsedUser = JSON.parse(user);
+      console.log('user', parsedUser);
+  
+      const storeData = {
+        userId: parsedUser?.userId,
+        storeName: data.storeName,
+        storeDescription: data.storeDescription,
+        storeAddress: data.storeAddress || "",
+        ownerName: data.ownerName,
+        email: data.email,
+        phone: data.phone,
+        accountDetails: `${data.bankName} - Account No: ${data.accountNumber}`,
+        storeLogo: storeLogoUrl,
+      };
+  
+      console.log("Store data to be sent:", storeData);
+  
+      const response = await fetch(`${process.env.NEXT_PUBLIC_LOOP_SERVER}/store/create`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(storeData),
+      });
+  
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to create store");
+      }
+  
+      const result = await response.json();
+      console.log("Store creation response:", result);
+      if (result.store._id) { 
+        parsedUser = {...parsedUser , storeId : result.store._id } 
+        localStorage.setItem("user", JSON.stringify(parsedUser));
+      }
+      setIsModalOpen(true);
+  
+      // Clear form data
+      setLogoFile(null);
+      reset(); 
+  
     } catch (error) {
-      console.error("Failed to create store", error)
+      console.error("Failed to create store", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
+  
 
   return (
     <>
@@ -128,7 +198,11 @@ export function CreateStoreForm() {
                     <input
                       type="file"
                       ref={fileInputRef}
-                      onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0] || null
+                        setLogoFile(file)
+                        setValue("storeLogo", file)
+                      }}
                       className="hidden"
                       accept="image/*"
                     />
@@ -167,15 +241,51 @@ export function CreateStoreForm() {
                 {/* Account Details */}
                 <div className="space-y-2">
                   <label className="text-gray-600 block mb-1">Account details</label>
-                  <select
-                    {...register("accountDetails")}
-                    className="w-full rounded-xl border-gray-200 border p-2 focus:outline-none focus:ring-2 focus:ring-[#632C0F] focus:border-transparent"
-                  >
-                    <option value="">Select Bank details</option>
-                    <option value="bank1">Bank Account 1</option>
-                    <option value="bank2">Bank Account 2</option>
-                    <option value="bank3">Bank Account 3</option>
-                  </select>
+                  <div className="space-y-2">
+                    <select
+                      {...register("bankName")}
+                      className="w-full rounded-xl border-gray-200 border p-2 focus:outline-none focus:ring-2 focus:ring-[#632C0F] focus:border-transparent"
+                      onChange={(e) => {
+                        setValue("bankName", e.target.value)
+                        // Update the combined account details whenever bank changes
+                        const accNumber = watch("accountNumber") || ""
+                        if (e.target.value) {
+                          setValue("accountDetails", `${e.target.value} - Account No: ${accNumber}`)
+                        }
+                      }}
+                    >
+                      <option value="">Select Bank</option>
+                      <option value="Habib Bank Limited (HBL)">Habib Bank Limited (HBL)</option>
+                      <option value="National Bank of Pakistan (NBP)">National Bank of Pakistan (NBP)</option>
+                      <option value="United Bank Limited (UBL)">United Bank Limited (UBL)</option>
+                      <option value="MCB Bank Limited">MCB Bank Limited</option>
+                      <option value="Allied Bank Limited (ABL)">Allied Bank Limited (ABL)</option>
+                      <option value="Bank Alfalah">Bank Alfalah</option>
+                      <option value="Meezan Bank">Meezan Bank</option>
+                      <option value="Bank Al Habib">Bank Al Habib</option>
+                      <option value="Faysal Bank">Faysal Bank</option>
+                      <option value="Askari Bank">Askari Bank</option>
+                      <option value="JS Bank">JS Bank</option>
+                      <option value="Soneri Bank">Soneri Bank</option>
+                      <option value="Bank of Punjab">Bank of Punjab</option>
+                      <option value="Dubai Islamic Bank Pakistan">Dubai Islamic Bank Pakistan</option>
+                      <option value="Sindh Bank">Sindh Bank</option>
+                    </select>
+
+                    <Input
+                      placeholder="Enter Account Number"
+                      {...register("accountNumber")}
+                      className="rounded-xl border-gray-200"
+                      onChange={(e) => {
+                        setValue("accountNumber", e.target.value)
+                        // Update the combined account details whenever account number changes
+                        const bank = watch("bankName") || ""
+                        if (bank) {
+                          setValue("accountDetails", `${bank} - Account No: ${e.target.value}`)
+                        }
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
 

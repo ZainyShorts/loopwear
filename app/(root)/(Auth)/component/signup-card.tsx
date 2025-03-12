@@ -1,31 +1,74 @@
 "use client"
 
-import type React from "react"
-
-import { useState } from "react"
-import { Eye, EyeOff, Mail, User, Lock } from "lucide-react"
+import React, { useState } from "react";
+import axios from "axios";
+import { Eye, EyeOff, Mail, User, Lock } from "lucide-react"; 
+import { useRouter } from "next/navigation";
 
 interface SignupFormProps {
-  onToggleForm: () => void
+  onToggleForm: () => void;
 }
 
 export default function SignupForm({ onToggleForm }: SignupFormProps) {
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [showPassword, setShowPassword] = useState(false); 
+  const router = useRouter();
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [formData, setFormData] = useState({
+    username: "",
+    email: "",
+    password: "",
+    confirmPassword: ""
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    // Handle signup logic here
-  }
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await axios.post(
+        `${process.env.NEXT_PUBLIC_LOOP_SERVER}/user/signup`,
+        {
+          username: formData.username,
+          email: formData.email,
+          password: formData.password,
+          role: "User"
+        }
+      );  
+      if (response.data) { 
+        router.push('/login')
+      }
+      
+      console.log("Signup successful:", response);
+    } catch (err) {
+      setError("Signup failed. Please try again.");
+      console.error("Signup error:", err);
+    }
+    setLoading(false);
+  };
 
   return (
     <div>
       <h1 className="text-2xl font-medium text-center mb-10">New To LoopWear?</h1>
-
+      {error && <p className="text-red-500 text-center">{error}</p>}
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="relative">
           <input
             type="text"
+            name="username"
+            value={formData.username}
+            onChange={handleChange}
             placeholder="Enter Your Name"
             className="w-full p-4 bg-[#f8efe0] rounded-md pr-12 text-gray-600 placeholder-gray-500 text-lg"
             required
@@ -38,6 +81,9 @@ export default function SignupForm({ onToggleForm }: SignupFormProps) {
         <div className="relative">
           <input
             type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
             placeholder="Enter Your Gmail"
             className="w-full p-4 bg-[#f8efe0] rounded-md pr-12 text-gray-600 placeholder-gray-500 text-lg"
             required
@@ -50,6 +96,9 @@ export default function SignupForm({ onToggleForm }: SignupFormProps) {
         <div className="relative">
           <input
             type={showPassword ? "text" : "password"}
+            name="password"
+            value={formData.password}
+            onChange={handleChange}
             placeholder="Enter Your Password"
             className="w-full p-4 bg-[#f8efe0] rounded-md pr-12 text-gray-600 placeholder-gray-500 text-lg"
             required
@@ -60,13 +109,15 @@ export default function SignupForm({ onToggleForm }: SignupFormProps) {
             className="absolute right-4 top-1/2 transform -translate-y-1/2"
           >
             {showPassword ? <EyeOff className="h-5 w-5 text-gray-500" /> : <Eye className="h-5 w-5 text-gray-500" />}
-            <span className="sr-only">Toggle password visibility</span>
           </button>
         </div>
 
         <div className="relative">
           <input
             type={showConfirmPassword ? "text" : "password"}
+            name="confirmPassword"
+            value={formData.confirmPassword}
+            onChange={handleChange}
             placeholder="Confirm Password"
             className="w-full p-4 bg-[#f8efe0] rounded-md pr-12 text-gray-600 placeholder-gray-500 text-lg"
             required
@@ -77,13 +128,12 @@ export default function SignupForm({ onToggleForm }: SignupFormProps) {
             className="absolute right-4 top-1/2 transform -translate-y-1/2"
           >
             <Lock className="h-5 w-5 text-gray-500" />
-            <span className="sr-only">Toggle password visibility</span>
           </button>
         </div>
 
         <div className="flex items-center justify-between mt-10">
           <p className="text-base">
-            Already have an account, just{" "}
+            Already have an account? {" "}
             <button type="button" onClick={onToggleForm} className="font-bold text-black">
               Login
             </button>{" "}
@@ -92,13 +142,13 @@ export default function SignupForm({ onToggleForm }: SignupFormProps) {
 
           <button
             type="submit"
+            disabled={loading}
             className="bg-[#7ab3d1] text-black px-8 py-3 rounded-xl border-[1px] border-black hover:bg-[#6aa0be] transition-colors font-medium"
           >
-            Register
+            {loading ? "Registering..." : "Register"}
           </button>
         </div>
       </form>
     </div>
-  )
+  );
 }
-

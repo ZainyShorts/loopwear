@@ -8,60 +8,155 @@ import * as z from "zod"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
-import { Calendar } from "lucide-react"
+import { Calendar, Plus, X } from "lucide-react"
 import { NotificationModal } from "@/app/components/Modal/NotificationModal"
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 const MAX_FILES = 4
 
 const formSchema = z.object({
-  dressType: z.string().min(1, "Please select a dress type"),
+  dressName: z.string().min(1, "Dress name is required"),
+  category: z.string().min(1, "Please select a category"),
   dressBrand: z.string().min(1, "Please select a dress brand"),
   dressPrice: z.string().min(1, "Price is required"),
   dressSize: z.string().min(1, "Please select a size"),
   dressListing: z.string().min(1, "Please select a listing category"),
   purchaseDate: z.string().min(1, "Purchase date is required"),
   dressDetails: z.string().min(10, "Please provide dress details"),
-  dressImages: z
-    .any()
-    .refine((files) => files?.length <= MAX_FILES, `You can only upload up to ${MAX_FILES} images`)
-    .refine(
-      (files: any) => Array.from(files || []).every((file: any) => file.size <= MAX_FILE_SIZE),
-      `Each file size should be less than 5MB`,
-    ),
 })
 
 export function AddDressForm() {
   const [loading, setLoading] = React.useState(false)
   const [selectedFiles, setSelectedFiles] = React.useState<File[]>([])
+  const [previewUrls, setPreviewUrls] = React.useState<string[]>([])
   const [isModalOpen, setIsModalOpen] = React.useState(false)
+  const [error, setError] = React.useState<string | null>(null)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   const {
     register,
     handleSubmit,
     formState: { errors },
+    reset,
   } = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
   })
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || [])
-    if (files.length > MAX_FILES) {
-      // Show error message
+    const newFiles = Array.from(event.target.files || [])
+    const updatedFiles = [...selectedFiles, ...newFiles]
+
+    if (updatedFiles.length > MAX_FILES) {
+      setError(`You can only upload up to ${MAX_FILES} images`)
       return
     }
-    setSelectedFiles(files)
+
+    setError(null)
+    setSelectedFiles(updatedFiles)
+
+    // Create preview URLs for new files and add to existing previews
+    const newPreviewUrls = newFiles.map((file) => URL.createObjectURL(file))
+    setPreviewUrls([...previewUrls, ...newPreviewUrls])
   }
+
+  const removeFile = (index: number) => {
+    const newFiles = [...selectedFiles]
+    newFiles.splice(index, 1)
+    setSelectedFiles(newFiles)
+
+    // Revoke the URL to avoid memory leaks
+    URL.revokeObjectURL(previewUrls[index])
+    const newPreviewUrls = [...previewUrls]
+    newPreviewUrls.splice(index, 1)
+    setPreviewUrls(newPreviewUrls)
+  }
+
+  // Clean up preview URLs when component unmounts
+  React.useEffect(() => {
+    return () => {
+      previewUrls.forEach((url) => URL.revokeObjectURL(url))
+    }
+  }, [])
 
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     try {
       setLoading(true)
-      console.log("Form data:", { ...data, images: selectedFiles })
-      // Instead of toast, show modal
+
+      // Upload images to Cloudinary
+      const imageUrls: string[] = []
+
+      if (selectedFiles.length > 0) {
+        for (const file of selectedFiles) {
+          const formData = new FormData()
+          formData.append("file", file)
+          formData.append("upload_preset", process.env.NEXT_PUBLIC_PRESET_NAME || "loopwear")
+
+          const cloudinaryResponse = await fetch(
+            `https://api.cloudinary.com/v1_1/${process.env.NEXT_PUBLIC_CLOUD_NAME || "diml90c1y"}/image/upload`,
+            {
+              method: "POST",
+              body: formData,
+            },
+          )
+
+          const cloudinaryData = await cloudinaryResponse.json()
+          console.log("Cloudinary response:", cloudinaryData)
+
+          if (cloudinaryData.secure_url) {
+            imageUrls.push(cloudinaryData.secure_url)
+          } else {
+            throw new Error("Failed to upload image to Cloudinary")
+          }
+        }
+      }
+
+      // Get userId from localStorage
+      const user = localStorage.getItem("user")
+      const parsedData = JSON.parse(user)
+
+      // Prepare data for API
+      const productData = {
+        userId: parsedData.userId,
+        productName: data.dressName,
+        productBrand: data.dressBrand,
+        productPrice: Number.parseFloat(data.dressPrice),
+        productSize: data.dressSize,
+        productListing: data.dressListing,
+        dateOfPurchase: new Date(data.purchaseDate).toISOString(),
+        productDetails: data.dressDetails,
+        category: data.category,
+        images: imageUrls,
+      }
+
+      console.log("Product data to be sent:", productData)
+
+      // Send data to backend
+      const response = await fetch(`${process.env.NEXT_PUBLIC_LOOP_SERVER}/product/add`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(productData),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || "Failed to add product")
+      }
+
+      const result = await response.json()
+      console.log("Product addition response:", result)
+
+      // Reset form and clear images
+      reset()
+      setSelectedFiles([])
+      setPreviewUrls([])
+
+      // Show success modal
       setIsModalOpen(true)
     } catch (error) {
       console.error("Failed to add dress", error)
+      setError(error instanceof Error ? error.message : "Failed to add product")
     } finally {
       setLoading(false)
     }
@@ -100,38 +195,48 @@ export function AddDressForm() {
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
               <div className="grid md:grid-cols-2 gap-x-8 gap-y-6">
-                {/* Dress Type */}
+                {/* Dress Name (changed from Dress Type) */}
                 <div className="space-y-2">
-                  <label className="text-gray-600 block mb-1">Dress Type</label>
+                  <label className="text-gray-600 block mb-1">Dress Name</label>
+                  <Input
+                    placeholder="Enter Dress Name"
+                    {...register("dressName")}
+                    className="rounded-xl border-gray-200"
+                  />
+                  {errors.dressName && <p className="text-sm text-red-500">{errors.dressName.message}</p>}
+                </div>
+
+                {/* Category */}
+                <div className="space-y-2">
+                  <label className="text-gray-600 block mb-1">Category</label>
                   <select
-                    {...register("dressType")}
+                    {...register("category")}
                     className="w-full rounded-xl border-gray-200 border p-2 focus:outline-none focus:ring-2 focus:ring-[#632C0F] focus:border-transparent"
                   >
-                    <option value="">Select Dress Type</option>
-                    <option value="bridal">Bridal</option>
-                    <option value="party">Party Wear</option>
-                    <option value="casual">Casual</option>
+                    <option value="">Select Category</option>
+                    <option value="Bridal">Bridal</option>
+                    <option value="Party Wear">Party Wear</option>
+                    <option value="Non-Bridal">Non-Bridal</option>
                   </select>
+                  {errors.category && <p className="text-sm text-red-500">{errors.category.message}</p>}
                 </div>
 
                 {/* Dress Brand */}
                 <div className="space-y-2">
                   <label className="text-gray-600 block mb-1">Dress Brand</label>
-                  <select
+                  <Input
+                    placeholder="Enter Brand Name"
                     {...register("dressBrand")}
-                    className="w-full rounded-xl border-gray-200 border p-2 focus:outline-none focus:ring-2 focus:ring-[#632C0F] focus:border-transparent"
-                  >
-                    <option value="">Select Dress Brand</option>
-                    <option value="brand1">Brand 1</option>
-                    <option value="brand2">Brand 2</option>
-                    <option value="brand3">Brand 3</option>
-                  </select>
+                    className="rounded-xl border-gray-200"
+                  />
+                  {errors.dressBrand && <p className="text-sm text-red-500">{errors.dressBrand.message}</p>}
                 </div>
 
                 {/* Dress Price */}
                 <div className="space-y-2">
                   <label className="text-gray-600 block mb-1">Dress Price</label>
                   <Input placeholder="In PKR" {...register("dressPrice")} className="rounded-xl border-gray-200" />
+                  {errors.dressPrice && <p className="text-sm text-red-500">{errors.dressPrice.message}</p>}
                 </div>
 
                 {/* Dress Size */}
@@ -148,6 +253,7 @@ export function AddDressForm() {
                     <option value="l">L</option>
                     <option value="xl">XL</option>
                   </select>
+                  {errors.dressSize && <p className="text-sm text-red-500">{errors.dressSize.message}</p>}
                 </div>
 
                 {/* Dress Listing */}
@@ -161,6 +267,7 @@ export function AddDressForm() {
                     <option value="rent">For Rent</option>
                     <option value="sale">For Sale</option>
                   </select>
+                  {errors.dressListing && <p className="text-sm text-red-500">{errors.dressListing.message}</p>}
                 </div>
 
                 {/* Date of Purchase */}
@@ -170,6 +277,7 @@ export function AddDressForm() {
                     <Input type="date" {...register("purchaseDate")} className="rounded-xl border-gray-200" />
                     <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none h-5 w-5" />
                   </div>
+                  {errors.purchaseDate && <p className="text-sm text-red-500">{errors.purchaseDate.message}</p>}
                 </div>
 
                 {/* Dress Details */}
@@ -180,35 +288,60 @@ export function AddDressForm() {
                     {...register("dressDetails")}
                     className="rounded-xl border-gray-200 min-h-[120px]"
                   />
+                  {errors.dressDetails && <p className="text-sm text-red-500">{errors.dressDetails.message}</p>}
                 </div>
 
                 {/* Dress Images */}
                 <div className="space-y-2 md:col-span-2">
                   <label className="text-gray-600 block mb-1">Dress Images</label>
-                  <div className="flex gap-2">
-                    <Input
-                      readOnly
-                      value={selectedFiles.map((f) => f.name).join(", ") || "Max of 4 images"}
-                      className="rounded-xl border-gray-200 flex-1"
-                    />
-                    <Button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="bg-[#90caf9] hover:bg-[#64b5f6] text-black rounded-xl px-6"
-                    >
-                      Upload
-                    </Button>
-                    <input
-                      type="file"
-                      multiple
-                      accept="image/*"
-                      ref={fileInputRef}
-                      onChange={handleFileChange}
-                      className="hidden"
-                      {...register("dressImages")}
-                    />
+
+                  {/* Image Preview Boxes */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    {[0, 1, 2, 3].map((index) => (
+                      <div
+                        key={index}
+                        className="relative aspect-square border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center overflow-hidden"
+                      >
+                        {index < previewUrls.length ? (
+                          <>
+                            <Image
+                              src={previewUrls[index] || "/placeholder.svg"}
+                              alt={`Preview ${index + 1}`}
+                              fill
+                              className="object-cover"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeFile(index)}
+                              className="absolute top-1 right-1 bg-white rounded-full p-1 shadow-md"
+                            >
+                              <X className="h-4 w-4 text-red-500" />
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="w-full h-full flex items-center justify-center"
+                          >
+                            <Plus className="h-8 w-8 text-gray-400" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
                   </div>
-                  <p className="text-sm text-gray-500">Maximum file upload size 5MB.</p>
+
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*"
+                    ref={fileInputRef}
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+
+                  {error && <p className="text-sm text-red-500">{error}</p>}
+                  <p className="text-sm text-gray-500">Maximum 4 images, 5MB per image.</p>
                 </div>
               </div>
 

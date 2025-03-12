@@ -11,7 +11,7 @@ interface NotificationModalProps {
   heading?: string
 }
 
-export function NotificationModal({ isOpen, onOpen, onClose, text, heading }: NotificationModalProps) {
+export function NotificationModal({ isOpen, onOpen, onClose, text, heading }: any) {
   useEffect(() => {
     if (isOpen && onOpen) {
       onOpen()
