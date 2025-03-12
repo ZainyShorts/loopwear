@@ -154,7 +154,7 @@ export function ProductDetails({
             <div className="space-y-3 sm:space-y-4 p-3 sm:p-4 lg:p-6 bg-[#FAF4EF] rounded-xl">
               <div className="flex gap-4 text-base sm:text-lg">
                 <span className="font-medium min-w-[60px]">Rent:</span>
-                <span>PKR {price.toLocaleString()}</span>
+                <span>PKR {price?.toLocaleString()}</span>
               </div>
               <div className="flex gap-4 text-base sm:text-lg">
                 <span className="font-medium min-w-[60px]">Size:</span>

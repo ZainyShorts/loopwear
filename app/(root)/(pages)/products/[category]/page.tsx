@@ -7,11 +7,13 @@ import { useParams } from "next/navigation"
 
 // Define the Product type
 interface Product {
-  id: string
-  name: string
-  price: number
-  description: string
-  imageUrl: string
+  _id: string
+  productName: string
+  productPrice: number
+  productBrand: string
+  productListing: string
+  productSize: string
+  images: string[]
   category: string
 }
 
@@ -21,7 +23,7 @@ const validCategories = ["Bridal", "Non-Bridal", "Party-Wear"]
 export default function ProductsPage() {
   const params = useParams()
   const category = params?.category as string
-  const [products, setProducts] = useState<any>([])
+  const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
 
   // Format category for display
@@ -30,11 +32,9 @@ export default function ProductsPage() {
   useEffect(() => {
     async function fetchProducts() {
       try {
-        setLoading(true) 
-        const adjustedCategory = formattedCategory === "Non Bridal" ? "Non-Bridal" : formattedCategory;
-
+        setLoading(true)
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_LOOP_SERVER}/product/getAllProducts?limit=10&page=1&category=${adjustedCategory}`,
+          `${process.env.NEXT_PUBLIC_LOOP_SERVER}/product/getAllProducts?limit=10&page=1&category=${category}`,
         )
 
         if (!response.ok) {
@@ -98,33 +98,31 @@ export default function ProductsPage() {
             </p>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-             {products.map((product) => (
-                          <div
-                            key={product._id}
-                            className="bg-white rounded-2xl overflow-hidden shadow-lg transition-transform hover:scale-[1.02]"
-                          >
-                            <div className="relative aspect-[3/4]">
-                              <Image
-                                src={product.images[0] || "/placeholder.svg"}
-                                alt={product.productName}
-                                fill
-                                className="object-cover"
-                              />
-                            
-                              <div className="absolute top-4 left-4 bg-white px-3 py-1 rounded-full text-sm font-medium">
-                                {product.productListing}
-                              </div>
-                            </div>
-                            <div className="p-4">
-                              <h3 className="font-semibold text-lg mb-1">{product.productName}</h3>
-                              <p className="text-gray-600 text-sm mb-2">{product.productBrand}</p>
-                              <div className="flex justify-between items-center">
-                                <p className="font-bold text-lg">PKR {product.productPrice.toLocaleString()}</p>
-                                <p className="text-sm text-gray-500">{product.productSize}</p>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
+              {products.map((product) => (
+                <Link href={`/description/${product._id}`} key={product._id} className="group">
+                  <div className="bg-white rounded-2xl overflow-hidden shadow-lg transition-transform hover:scale-[1.02]">
+                    <div className="relative aspect-[3/4]">
+                      <Image
+                        src={product.images[0] || "/placeholder.svg"}
+                        alt={product.productName}
+                        fill
+                        className="object-cover"
+                      />
+                      <div className="absolute top-4 left-4 bg-white px-3 py-1 rounded-full text-sm font-medium">
+                        {product.productListing}
+                      </div>
+                    </div>
+                    <div className="p-4">
+                      <h3 className="font-semibold text-lg mb-1">{product.productName}</h3>
+                      <p className="text-gray-600 text-sm mb-2">{product.productBrand}</p>
+                      <div className="flex justify-between items-center">
+                        <p className="font-bold text-lg">PKR {product.productPrice?.toLocaleString() || '0'}</p>
+                        <p className="text-sm text-gray-500">{product.productSize}</p>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
             </div>
           </>
         )}
@@ -132,4 +130,3 @@ export default function ProductsPage() {
     </div>
   )
 }
-
