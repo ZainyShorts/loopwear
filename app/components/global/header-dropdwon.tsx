@@ -17,8 +17,12 @@ export default function HeaderDropdown() {
   useEffect(() => {
     // Check if userId exists in localStorage
     const user = localStorage.getItem('user') 
-    const parsedUser = JSON.parse(user)
-    setIsLoggedIn(!!parsedUser.userId)
+    if(user){
+      const parsedUser = JSON.parse(user)
+      setIsLoggedIn(true)
+    }else{
+      setIsLoggedIn(false)
+    }
   }, [])
 
   const handleLogout = () => {
