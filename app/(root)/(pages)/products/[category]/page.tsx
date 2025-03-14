@@ -31,10 +31,11 @@ export default function ProductsPage() {
 
   useEffect(() => {
     async function fetchProducts() {
-      try {
+      try { 
+        let cat = formattedCategory === "Non Bridal" ? "Non-Bridal" : formattedCategory;
         setLoading(true)
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_LOOP_SERVER}/product/getAllProducts?limit=10&page=1&category=${category}`,
+          `${process.env.NEXT_PUBLIC_LOOP_SERVER}/product/getAllProducts?limit=10&page=1&category=${cat}`,
         )
 
         if (!response.ok) {

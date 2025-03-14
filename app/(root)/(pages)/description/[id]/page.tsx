@@ -4,15 +4,17 @@ import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import TopBanner from "@/app/components/global/top-banner"
 import { ProductDetails } from "./component/product-detail"
-import { Toaster } from "@/components/ui/toaster"
 import { SubHeader } from "@/app/components/global/sub-header"
 import { ProductSlider } from "@/app/components/global/product-slider"
 import FooterBanner from "@/app/components/global/footer-banner"
 import { products } from "@/lib/data"
+import { Loader2 } from "lucide-react"
+import { ToastContainer } from "react-toastify"
+import "react-toastify/dist/ReactToastify.css"
 
 // Define the Product type
 interface Product {
-  id: string
+  _id: string
   name: string
   price: number
   description: string
@@ -20,6 +22,11 @@ interface Product {
   category: string
   images?: string[]
   size?: string
+  productDetails?: string
+  productBrand?: string
+  productListing?: string
+  productName?: string
+  productPrice?: number
 }
 
 export default function ProductDescriptionPage() {
@@ -32,16 +39,14 @@ export default function ProductDescriptionPage() {
     async function fetchProductById() {
       try {
         setLoading(true)
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_LOOP_SERVER}/product/${id}`
-        )
+        const response = await fetch(`${process.env.NEXT_PUBLIC_LOOP_SERVER}/product/${id}`)
 
         if (!response.ok) {
           throw new Error(`Failed to fetch product: ${response.status}`)
         }
 
         const data = await response.json()
-        console.log('product data', data)
+        console.log("product data", data)
         setProduct(data || null)
       } catch (error) {
         console.error("Error fetching product:", error)
@@ -56,11 +61,6 @@ export default function ProductDescriptionPage() {
     }
   }, [id])
 
-  const handleAddToCart = async () => {
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-  }
-
   const handleRentNow = async (formData: any) => {
     // Simulate API call
     await new Promise((resolve) => setTimeout(resolve, 1000))
@@ -72,25 +72,9 @@ export default function ProductDescriptionPage() {
       <div className="min-h-screen bg-[#FAF4EF]">
         <TopBanner back={true} />
         <SubHeader showSearch={true} />
-        <div className="max-w-7xl mx-auto p-4 md:p-8">
-          <div className="flex flex-col md:flex-row gap-8">
-            <div className="w-full md:w-1/2">
-              <div className="aspect-square bg-[#E5D6CA] animate-pulse rounded-lg"></div>
-              <div className="flex gap-2 mt-4">
-                {[1, 2, 3, 4].map((i) => (
-                  <div key={i} className="w-20 h-20 bg-[#E5D6CA] animate-pulse rounded-md"></div>
-                ))}
-              </div>
-            </div>
-            <div className="w-full md:w-1/2">
-              <div className="h-8 w-3/4 bg-[#E5D6CA] animate-pulse rounded-md mb-4"></div>
-              <div className="h-6 w-1/4 bg-[#E5D6CA] animate-pulse rounded-md mb-6"></div>
-              <div className="h-4 w-full bg-[#E5D6CA] animate-pulse rounded-md mb-2"></div>
-              <div className="h-4 w-full bg-[#E5D6CA] animate-pulse rounded-md mb-8"></div>
-              <div className="h-10 w-full bg-[#E5D6CA] animate-pulse rounded-md mb-4"></div>
-              <div className="h-10 w-full bg-[#E5D6CA] animate-pulse rounded-md"></div>
-            </div>
-          </div>
+        <div className="max-w-7xl mx-auto p-4 md:p-8 flex flex-col items-center justify-center min-h-[60vh]">
+          <Loader2 className="h-12 w-12 animate-spin text-[#6E391D]" />
+          <p className="mt-4 text-[#6E391D] font-medium">Loading product details...</p>
         </div>
       </div>
     )
@@ -112,21 +96,35 @@ export default function ProductDescriptionPage() {
 
   // Transform the product data to match the expected format for ProductDetails
   const productData = {
-    title: product.name,
+    _id: product._id,
+    title: product.productName || product.name,
     images: product.images || [product.imageUrl, product.imageUrl, product.imageUrl, product.imageUrl],
-    price: product.price,
+    price: product.productPrice || product.price,
     size: product.size || "Medium",
-    description: product.description,
+    description: product.productDetails || product.description,
+    productBrand: product.productBrand || "Checking",
+    productListing: product.productListing || "Rent",
   }
 
   return (
     <div className="min-h-screen bg-[#FAF4EF]">
       <TopBanner back={true} />
       <SubHeader showSearch={true} />
-      <ProductDetails {...productData} onAddToCart={handleAddToCart} onRentNow={handleRentNow} />
+      <ProductDetails {...productData} onRentNow={handleRentNow} />
       <ProductSlider products={products} />
       <FooterBanner />
-      <Toaster />
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
     </div>
   )
 }
+
