@@ -6,6 +6,7 @@ import Link from "next/link"
 import { ShoppingCart, Trash2, Loader2 } from "lucide-react"
 import { toast } from "react-toastify"
 import { Button } from "@/components/ui/button"
+import axios from "axios"
 
 interface CartItem {
   _id: string
@@ -21,7 +22,8 @@ interface CartItem {
 export default function CartTable() {
   const [cartItems, setCartItems] = useState<CartItem[]>([])
   const [loading, setLoading] = useState(true)
-  const [removingId, setRemovingId] = useState<string | null>(null)
+  const [removingId, setRemovingId] = useState<string | null>(null) 
+  const [productArray, setProductArray] = useState<any>([]);
 
   useEffect(() => {
     // Fetch cart items from localStorage
@@ -32,7 +34,9 @@ export default function CartTable() {
           const storedItems = localStorage.getItem("cartItems")
           if (storedItems) {
             const parsedItems = JSON.parse(storedItems)
-            setCartItems(parsedItems)
+            setCartItems(parsedItems)  
+            console.log('parsedItems', parsedItems._id)
+            setProductArray(parsedItems.map(item => ({ productId: item._id, quantity: 1 })));
           }
         }
       } catch (error) {
@@ -105,7 +109,25 @@ export default function CartTable() {
       </div>
     )
   }
+  const handleCreateOrder = async () => { 
+   try {   
+    const user = localStorage.getItem("user")
+    const parsedData = JSON.parse(user)
+    const data = { 
+      userId: parsedData.userId, 
+      status: "Pending", 
+      products: productArray, 
+      totalPrice: Number(calculateTotal()) 
+    };
+    
+    console.log('data',data)
+   const res = await axios.post(`${process.env.NEXT_PUBLIC_LOOP_SERVER}/order/create`,data) 
+   console.log('res',res);
+   } 
+   catch(e) { 
 
+   }
+  }
   return (
     <div className="w-full md:w-2/3 lg:w-3/4 xl:w-2/3 flex flex-col px-4 py-8 md:py-12 bg-white/90 rounded-xl shadow-sm">
       <h1 className="text-2xl md:text-4xl font-serif font-bold mb-8 text-center tracking-wide">SHOPPING CART</h1>
@@ -174,8 +196,8 @@ export default function CartTable() {
           >
             Continue Shopping
           </Link>
-          <Button className="px-6 py-3 bg-[#6E391D] text-white rounded-xl hover:bg-[#542D18] transition-colors duration-200">
-            Proceed to Checkout
+          <Button onClick={handleCreateOrder} className="px-6 py-3 bg-[#6E391D] text-white rounded-xl hover:bg-[#542D18] transition-colors duration-200">
+            Create Order
           </Button>
         </div>
       </div>
