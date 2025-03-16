@@ -11,19 +11,29 @@ import { logo } from "@/lib/data"
 export default function VendorPage() {
   const router = useRouter()
   const [hasStore, setHasStore] = useState(false)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+
+  function handleLogout() {
+    localStorage.removeItem("user")
+    router.push("/login")
+  }
 
   useEffect(() => {
     // Check if user data exists in localStorage
     const userData = localStorage.getItem("user")
     if (userData) {
       try {
-        const user = JSON.parse(userData) 
-        console.log('user',user)
+        const user = JSON.parse(userData)
+        console.log("user", user)
         // Set hasStore based on user.store value
         setHasStore(user.storeId)
+        setIsLoggedIn(true)
       } catch (error) {
         console.error("Error parsing user data:", error)
+        setIsLoggedIn(false)
       }
+    } else {
+      setIsLoggedIn(false)
     }
   }, [])
 
@@ -51,13 +61,23 @@ export default function VendorPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            className="border-[#6b3419] text-[#6b3419] rounded-full hover:bg-[#6b3419] hover:text-white transition-colors"
-          >
-            logout
-          </Button>
-
+          {isLoggedIn ? (
+            <Button
+              variant="outline"
+              className="border-[#6b3419] text-[#6b3419] rounded-full hover:bg-[#6b3419] hover:text-white transition-colors"
+              onClick={handleLogout}
+            >
+              Logout
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              className="border-[#6b3419] text-[#6b3419] rounded-full hover:bg-[#6b3419] hover:text-white transition-colors"
+              onClick={() => navigate("/login")}
+            >
+              Login
+            </Button>
+          )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full hover:bg-[#6b3419]/10 bg-white">
@@ -73,19 +93,19 @@ export default function VendorPage() {
               </div>
               <DropdownMenuItem
                 onClick={() => hasStore && navigate("/vendor/products")}
-                disabled={!hasStore}
-                className={`py-3 px-4 flex items-center gap-2 ${hasStore ? "cursor-pointer hover:bg-[#6b3419]/10 hover:text-[#6b3419] focus:bg-[#6b3419]/10 focus:text-[#6b3419]" : "cursor-not-allowed opacity-60"}`}
+                disabled={!hasStore || !isLoggedIn}
+                className={`py-3 px-4 flex items-center gap-2 ${hasStore && isLoggedIn ? "cursor-pointer hover:bg-[#6b3419]/10 hover:text-[#6b3419] focus:bg-[#6b3419]/10 focus:text-[#6b3419]" : "cursor-not-allowed opacity-60"}`}
               >
-                {!hasStore && <Lock className="h-4 w-4 text-[#6b3419]" />}
+                {(!hasStore || !isLoggedIn) && <Lock className="h-4 w-4 text-[#6b3419]" />}
                 <ShoppingBag className="h-4 w-4 text-[#6b3419]" />
                 <span>View Products</span>
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => hasStore && navigate("/add-dress")}
-                disabled={!hasStore}
-                className={`py-3 px-4 flex items-center gap-2 ${hasStore ? "cursor-pointer hover:bg-[#6b3419]/10 hover:text-[#6b3419] focus:bg-[#6b3419]/10 focus:text-[#6b3419]" : "cursor-not-allowed opacity-60"}`}
+                disabled={!hasStore || !isLoggedIn}
+                className={`py-3 px-4 flex items-center gap-2 ${hasStore && isLoggedIn ? "cursor-pointer hover:bg-[#6b3419]/10 hover:text-[#6b3419] focus:bg-[#6b3419]/10 focus:text-[#6b3419]" : "cursor-not-allowed opacity-60"}`}
               >
-                {!hasStore && <Lock className="h-4 w-4 text-[#6b3419]" />}
+                {(!hasStore || !isLoggedIn) && <Lock className="h-4 w-4 text-[#6b3419]" />}
                 <Plus className="h-4 w-4 text-[#6b3419]" />
                 <span>Add Product</span>
               </DropdownMenuItem>
@@ -97,11 +117,22 @@ export default function VendorPage() {
                 <span>Vendor Policy</span>
               </DropdownMenuItem>
               <DropdownMenuItem
-                onClick={() => navigate("/create-store")}
-                className="py-3 px-4 flex items-center gap-2 cursor-pointer hover:bg-[#6b3419]/10 hover:text-[#6b3419] focus:bg-[#6b3419]/10 focus:text-[#6b3419]"
+                onClick={() => !hasStore && navigate("/create-store")}
+                disabled={!isLoggedIn || hasStore}
+                className={`py-3 px-4 flex items-center gap-2 ${isLoggedIn && !hasStore ? "cursor-pointer hover:bg-[#6b3419]/10 hover:text-[#6b3419] focus:bg-[#6b3419]/10 focus:text-[#6b3419]" : "cursor-not-allowed opacity-60"}`}
               >
+                {(!isLoggedIn || hasStore) && <Lock className="h-4 w-4 text-[#6b3419]" />}
                 <Store className="h-4 w-4 text-[#6b3419]" />
                 <span>Create Store</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => navigate("/vendor/orders")}
+                disabled={!isLoggedIn || !hasStore}
+                className={`py-3 px-4 flex items-center gap-2 ${isLoggedIn && hasStore ? "cursor-pointer hover:bg-[#6b3419]/10 hover:text-[#6b3419] focus:bg-[#6b3419]/10 focus:text-[#6b3419]" : "cursor-not-allowed opacity-60"}`}
+              >
+                {(!isLoggedIn || !hasStore) && <Lock className="h-4 w-4 text-[#6b3419]" />}
+                <Store className="h-4 w-4 text-[#6b3419]" />
+                <span>View Orders</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -162,15 +193,25 @@ export default function VendorPage() {
         <div className="bg-[#6b3419]/10 rounded-lg p-8 text-center">
           <h3 className="text-2xl font-serif mb-4 text-[#6b3419]">Ready to start earning?</h3>
           <p className="mb-6 max-w-2xl mx-auto text-gray-700">
-            {!hasStore
-              ? "Create your store first to start listing your dresses and earning extra income."
-              : "List your first dress today and join our community of fashion entrepreneurs making extra income from their wardrobe."}
+            {!isLoggedIn
+              ? "Login to your account to start listing your dresses and earning extra income."
+              : !hasStore
+                ? "Create your store first to start listing your dresses and earning extra income."
+                : "List your first dress today and join our community of fashion entrepreneurs making extra income from their wardrobe."}
           </p>
           <Button
             className="bg-[#6b3419] hover:bg-[#5a2c15] text-white px-8 py-6 rounded-full text-lg"
-            onClick={() => (hasStore ? navigate("/add-dress") : navigate("/create-store"))}
+            onClick={() => {
+              if (!isLoggedIn) {
+                navigate("/login")
+              } else if (hasStore) {
+                navigate("/add-dress")
+              } else {
+                navigate("/create-store")
+              }
+            }}
           >
-            {hasStore ? "Add Your First Product" : "Create Your Store"}
+            {!isLoggedIn ? "Login to Your Account" : hasStore ? "Add Your First Product" : "Create Your Store"}
           </Button>
         </div>
       </div>

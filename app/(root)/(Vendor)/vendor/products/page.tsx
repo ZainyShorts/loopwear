@@ -47,12 +47,13 @@ export default function ProductsPage() {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_LOOP_SERVER}/product/getAllProductsByUserId?userId=${parsedUser?.userId}&limit=${limit}&page=${page}`,
       )
-
+ 
       if (!response.ok) {
         throw new Error("Failed to fetch products")
       }
 
-      const data = await response.json()
+      const data = await response.json() 
+      console.log(data.products);
       setProducts(data.products || [])
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch products")

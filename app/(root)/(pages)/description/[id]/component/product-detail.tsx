@@ -36,7 +36,8 @@ const formSchema = z.object({
 })
 
 interface ProductDetailsProps {
-  _id: string
+  _id: string 
+  storeId: string
   title: string
   images: string[]
   price: number
@@ -48,8 +49,9 @@ interface ProductDetailsProps {
 }
 
 export function ProductDetails({
-  _id,
-  title,
+  _id, 
+  storeId,
+  title, 
   images,
   price,
   size,
@@ -95,7 +97,8 @@ export function ProductDetails({
 
       // Create cart item object
       const cartItem = {
-        _id,
+        _id, 
+        storeId,
         title,
         image: images[0],
         price,

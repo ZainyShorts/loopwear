@@ -64,7 +64,6 @@ export function AddDressForm() {
     newFiles.splice(index, 1)
     setSelectedFiles(newFiles)
 
-    // Revoke the URL to avoid memory leaks
     URL.revokeObjectURL(previewUrls[index])
     const newPreviewUrls = [...previewUrls]
     newPreviewUrls.splice(index, 1)
@@ -116,7 +115,8 @@ export function AddDressForm() {
 
       // Prepare data for API
       const productData = {
-        userId: parsedData.userId,
+        userId: parsedData.userId, 
+        storeId : parsedData.storeId,
         productName: data.dressName,
         productBrand: data.dressBrand,
         productPrice: Number.parseFloat(data.dressPrice),

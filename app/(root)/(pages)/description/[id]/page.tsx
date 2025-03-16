@@ -14,7 +14,8 @@ import "react-toastify/dist/ReactToastify.css"
 
 // Define the Product type
 interface Product {
-  _id: string
+  _id: string 
+  storeId : string
   name: string
   price: number
   description: string
@@ -96,7 +97,8 @@ export default function ProductDescriptionPage() {
 
   // Transform the product data to match the expected format for ProductDetails
   const productData = {
-    _id: product._id,
+    _id: product._id, 
+    storeId: product.storeId,
     title: product.productName || product.name,
     images: product.images || [product.imageUrl, product.imageUrl, product.imageUrl, product.imageUrl],
     price: product.productPrice || product.price,

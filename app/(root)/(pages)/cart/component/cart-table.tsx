@@ -22,8 +22,9 @@ interface CartItem {
 export default function CartTable() {
   const [cartItems, setCartItems] = useState<CartItem[]>([])
   const [loading, setLoading] = useState(true)
-  const [removingId, setRemovingId] = useState<string | null>(null) 
-  const [productArray, setProductArray] = useState<any>([]);
+  const [removingId, setRemovingId] = useState<string | null>(null)
+  const [productArray, setProductArray] = useState<any>([])
+  const [orderLoading, setOrderLoading] = useState(false)
 
   useEffect(() => {
     // Fetch cart items from localStorage
@@ -34,9 +35,9 @@ export default function CartTable() {
           const storedItems = localStorage.getItem("cartItems")
           if (storedItems) {
             const parsedItems = JSON.parse(storedItems)
-            setCartItems(parsedItems)  
-            console.log('parsedItems', parsedItems._id)
-            setProductArray(parsedItems.map(item => ({ productId: item._id, quantity: 1 })));
+            setCartItems(parsedItems)
+            console.log("parsedItems", parsedItems._id)
+            setProductArray(parsedItems.map((item) => ({ productId: item._id, quantity: 1 })))
           }
         }
       } catch (error) {
@@ -109,24 +110,43 @@ export default function CartTable() {
       </div>
     )
   }
-  const handleCreateOrder = async () => { 
-   try {   
-    const user = localStorage.getItem("user")
-    const parsedData = JSON.parse(user)
-    const data = { 
-      userId: parsedData.userId, 
-      status: "Pending", 
-      products: productArray, 
-      totalPrice: Number(calculateTotal()) 
-    };
-    
-    console.log('data',data)
-   const res = await axios.post(`${process.env.NEXT_PUBLIC_LOOP_SERVER}/order/create`,data) 
-   console.log('res',res);
-   } 
-   catch(e) { 
+  const handleCreateOrder = async () => {
+    setOrderLoading(true)
+    try {
+      const user = localStorage.getItem("user")
+      const parsedData = JSON.parse(user)
+      const data = {
+        userId: parsedData.userId,
+        status: "Pending",
+        storeId: parsedData.storeId,
+        products: productArray,
+        totalPrice: Number(calculateTotal()),
+      }
 
-   }
+      console.log("data", data)
+      const res = await axios.post(`${process.env.NEXT_PUBLIC_LOOP_SERVER}/order/create`, data)
+      console.log("res", res)
+
+      if (res.data) {
+        toast.success("Order created successfully!", {
+          position: "top-right",
+          autoClose: 3000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+        })
+        // Clear cart after successful order
+        setCartItems([])
+        localStorage.removeItem("cartItems")
+      }
+    } catch (e) {
+      toast.error("Failed to create order. Please try again.")
+      console.error("Order creation error:", e)
+    } finally {
+      setOrderLoading(false)
+    }
   }
   return (
     <div className="w-full md:w-2/3 lg:w-3/4 xl:w-2/3 flex flex-col px-4 py-8 md:py-12 bg-white/90 rounded-xl shadow-sm">
@@ -196,8 +216,19 @@ export default function CartTable() {
           >
             Continue Shopping
           </Link>
-          <Button onClick={handleCreateOrder} className="px-6 py-3 bg-[#6E391D] text-white rounded-xl hover:bg-[#542D18] transition-colors duration-200">
-            Create Order
+          <Button
+            onClick={handleCreateOrder}
+            disabled={orderLoading}
+            className="px-6 py-3 bg-[#6E391D] text-white rounded-xl hover:bg-[#542D18] transition-colors duration-200"
+          >
+            {orderLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              "Create Order"
+            )}
           </Button>
         </div>
       </div>
