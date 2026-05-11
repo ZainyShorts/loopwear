@@ -217,7 +217,7 @@ const Login = ({ mode }: { mode: SystemMode }) => {
                 id="email"
                 type="email"
                 placeholder="khurram@themaskchat.com"
-                className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 bg-white/80 backdrop-blur-sm border border-white/30 rounded-xl text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-all"
                 {...register("email", { required: "Email is required" })}
               />
               <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -244,7 +244,7 @@ const Login = ({ mode }: { mode: SystemMode }) => {
                 id="password"
                 type={showPassword ? "text" : "password"}
                 placeholder="••••••••••"
-                className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 bg-white/80 backdrop-blur-sm border border-white/30 rounded-xl text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-all"
                 {...register("password", { required: "Password is required" })}
               />
               <button

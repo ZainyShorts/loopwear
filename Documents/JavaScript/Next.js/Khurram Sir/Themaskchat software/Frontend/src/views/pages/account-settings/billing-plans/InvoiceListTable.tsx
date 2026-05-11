@@ -1,156 +1,39 @@
 "use client"
 
-// React Imports
 import { useState, useEffect, useMemo } from "react"
-
-// MUI Imports
+import { format, parseISO } from "date-fns"
 import Card from "@mui/material/Card"
 import CardContent from "@mui/material/CardContent"
 import Typography from "@mui/material/Typography"
 import MenuItem from "@mui/material/MenuItem"
-import Tooltip from "@mui/material/Tooltip"
 import TablePagination from "@mui/material/TablePagination"
-import type { TextFieldProps } from "@mui/material/TextField"
-
-// Third-party Imports
-import classnames from "classnames"
-import { rankItem } from "@tanstack/match-sorter-utils"
-import {
-  createColumnHelper,
-  flexRender,
-  getCoreRowModel,
-  useReactTable,
-  getFilteredRowModel,
-  getFacetedRowModel,
-  getFacetedUniqueValues,
-  getFacetedMinMaxValues,
-  getPaginationRowModel,
-  getSortedRowModel,
-} from "@tanstack/react-table"
-import type { ColumnDef, FilterFn } from "@tanstack/react-table"
-import type { RankingInfo } from "@tanstack/match-sorter-utils"
-
-// Type Imports
-import type { ThemeColor } from "@core/types"
-
-// Component Imports
-import CustomAvatar from "@core/components/mui/Avatar"
-import TablePaginationComponent from "@components/TablePaginationComponent"
+import type { ColumnDef } from "@tanstack/react-table"
 import CustomTextField from "@core/components/mui/TextField"
+import TablePaginationComponent from "@components/TablePaginationComponent"
+import { createColumnHelper, useReactTable, getCoreRowModel, getPaginationRowModel, getSortedRowModel, flexRender } from "@tanstack/react-table"
+import { getBaseUrl } from "../../../../api/vars/vars"
 
-// Util Imports
-import { getInitials } from "@/utils/getInitials"
-
-// Style Imports
-import tableStyles from "@core/styles/table.module.css"
-import { useAuthStore } from "@/store/authStore"
-import { ENDPOINTS, getBaseUrl } from "@/api/vars/vars"
-
-declare module "@tanstack/table-core" {
-  interface FilterFns {
-    fuzzy: FilterFn<unknown>
-  }
-  interface FilterMeta {
-    itemRank: RankingInfo
-  }
-}
-
-// Updated types for the API response
-type InvoiceApiResponse = {
-  count: number
-  next: string | null
-  previous: string | null
-  results: InvoiceData[]
-}
-
-type InvoiceData = {
-  invoice_id: string
-  amount_paid: string
+interface Payment {
+  stripe_payment_intent_id: string
+  amount: number
   currency: string
-  start_date: string
   status: string
+  created_at: string
 }
 
-type InvoiceDataWithAction = InvoiceData & {
-  action?: string;
-  paid: string;
+interface TransactionDetailsResponse {
+  payments: Payment[]
 }
 
-type InvoiceStatusObj = {
-  [key: string]: {
-    icon: string
-    color: ThemeColor
-  }
-}
-
-const fuzzyFilter: FilterFn<any> = (row, columnId, value, addMeta) => {
-  // Rank the item
-  const itemRank = rankItem(row.getValue(columnId), value)
-
-  // Store the itemRank info
-  addMeta({
-    itemRank,
-  })
-
-  // Return if the item should be filtered in/out
-  return itemRank.passed
-}
-
-const DebouncedInput = ({
-  value: initialValue,
-  onChange,
-  debounce = 500,
-  ...props
-}: {
-  value: string | number
-  onChange: (value: string | number) => void
-  debounce?: number
-} & Omit<TextFieldProps, "onChange">) => {
-  // States
-  const [value, setValue] = useState(initialValue)
-
-  useEffect(() => {
-    setValue(initialValue)
-  }, [initialValue])
-
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      onChange(value)
-    }, debounce)
-
-    return () => clearTimeout(timeout)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value])
-
-  return <CustomTextField {...props} value={value} onChange={(e) => setValue(e.target.value)} />
-}
-
-// Updated status object for invoice statuses
-const invoiceStatusObj: InvoiceStatusObj = {
-  paid: { color: "success", icon: "tabler-check" },
-  pending: { color: "warning", icon: "tabler-clock" },
-  failed: { color: "error", icon: "tabler-x" },
-  draft: { color: "primary", icon: "tabler-mail" },
-  open: { color: "info", icon: "tabler-file-text" },
-  void: { color: "secondary", icon: "tabler-ban" },
-}
-
-// Column Definitions
-const columnHelper = createColumnHelper<InvoiceDataWithAction>()
+const columnHelper = createColumnHelper<Payment>()
 
 const InvoiceListTable = () => {
-  // States
-  const [status, setStatus] = useState<string>("")
-  const [rowSelection, setRowSelection] = useState({})
-  const [data, setData] = useState<InvoiceData[]>([])
-  const [globalFilter, setGlobalFilter] = useState("")
+  const [payments, setPayments] = useState<Payment[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const { user } = useAuthStore()
 
-  // Fetch data from API
   useEffect(() => {
-    const fetchInvoices = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true)
         const authToken = localStorage.getItem("auth_token")
@@ -159,7 +42,7 @@ const InvoiceListTable = () => {
           throw new Error("No authentication token found")
         }
 
-        const response = await fetch(`${getBaseUrl()}account/${ENDPOINTS.invoices}/`, {
+        const response = await fetch(`${getBaseUrl()}transactions/transactions_details/`, {
           method: "GET",
           headers: {
             Authorization: `Token ${authToken}`,
@@ -167,137 +50,92 @@ const InvoiceListTable = () => {
           },
         })
 
+        if (response.status === 401) {
+          window.location.href = "/en/login"
+          return
+        }
+
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`)
         }
 
-        const result: InvoiceApiResponse = await response.json()
-        setData(result.results)
-        setError(null)
+        const result: TransactionDetailsResponse = await response.json()
+        setPayments(result.payments || [])
       } catch (err) {
-        setError(err instanceof Error ? err.message : "Failed to fetch invoices")
-        console.error("Error fetching invoices:", err)
+        console.error("Error fetching payments:", err)
+        setError(err instanceof Error ? err.message : "Failed to fetch payments")
       } finally {
         setLoading(false)
       }
     }
 
-    fetchInvoices()
+    fetchData()
   }, [])
 
- 
-
-  const columns = useMemo<ColumnDef<InvoiceDataWithAction, any>[]>(
+  const columns = useMemo<ColumnDef<Payment, any>[]>(
     () => [
+      columnHelper.accessor("created_at", {
+        header: "Date",
+        cell: ({ row }) => (
+          <Typography>
+            {format(parseISO(row.original.created_at), "MMM dd, yyyy HH:mm")}
+          </Typography>
+        ),
+      }),
+      columnHelper.accessor("amount", {
+        header: "Amount",
+        cell: ({ row }) => (
+          <Typography className="font-medium">
+            {row.original.currency} {(row.original.amount / 100).toFixed(2)}
+          </Typography>
+        ),
+      }),
       columnHelper.accessor("status", {
         header: "Status",
         cell: ({ row }) => (
-          <Tooltip
-            title={
-              <div>
-                <Typography variant="body2" component="span" className="text-inherit">
-                  Status: {row.original.status}
-                </Typography>
-                <br />
-                <Typography variant="body2" component="span" className="text-inherit">
-                  Amount: {row.original.amount_paid} {row.original.currency}
-                </Typography>
-                <br />
-                <Typography variant="body2" component="span" className="text-inherit">
-                  Invoice ID: {row.original.invoice_id}
-                </Typography>
-              </div>
-            }
+          <span
+            style={{
+              padding: "0.25rem 0.5rem",
+              borderRadius: "4px",
+              color: "#fff",
+              fontWeight: 500,
+              backgroundColor:
+                row.original.status === "paid"
+                  ? "#4CAF50"
+                  : row.original.status === "pending"
+                  ? "#FFC107"
+                  : "#F44336",
+            }}
           >
-            <CustomAvatar skin="light" color={invoiceStatusObj[row.original.status]?.color || "primary"} size={28}>
-              <i
-                className={classnames("bs-4 is-4", invoiceStatusObj[row.original.status]?.icon || "tabler-file-text")}
-              />
-            </CustomAvatar>
-          </Tooltip>
+            {row.original.status}
+          </span>
         ),
       }),
-      columnHelper.accessor("invoice_id", {
-        header: "User",
+      columnHelper.accessor("stripe_payment_intent_id", {
+        header: "Payment Intent ID",
         cell: ({ row }) => (
-          <div className="flex items-center gap-3">
-            <CustomAvatar skin="light" size={34}>
-              {user?.first_name ? getInitials(user.first_name) : "U"}
-            </CustomAvatar>
-            <div className="flex flex-col">
-              <Typography className="font-medium" color="text.primary">
-                {user?.first_name} {user?.last_name}
-              </Typography>
-              <Typography variant="body2">{row.original.invoice_id}</Typography>
-            </div>
-          </div>
-        ),
-      }),
-      columnHelper.accessor("amount_paid", {
-        header: "Amount",
-        cell: ({ row }) => (
-          <Typography className="font-medium">{`${row.original.amount_paid} ${row.original.currency}`}</Typography>
-        ),
-      }),
-      columnHelper.accessor("paid", {
-        header: "Status",
-        cell: ({ row }) => (
-          <Typography className="font-medium">Paid</Typography>
-        ),
-      }),
-      columnHelper.accessor("start_date", {
-        header: "Issue Date",
-        cell: ({ row }) => (
-          <Typography>
-            {new Date(row.original.start_date).toLocaleDateString("en-US", {
-              year: "numeric",
-              month: "short",
-              day: "numeric",
-            })}
+          <Typography variant="body2" style={{ fontFamily: "monospace" }}>
+            {row.original.stripe_payment_intent_id}
           </Typography>
         ),
       }),
     ],
-    [user],
+    []
   )
 
   const table = useReactTable({
-    data: data as InvoiceData[],
+    data: payments,
     columns,
-    filterFns: {
-      fuzzy: fuzzyFilter,
-    },
-    state: {
-      rowSelection,
-      globalFilter,
-    },
+    filterFns: {} as any,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
     initialState: {
       pagination: {
         pageSize: 10,
       },
     },
-    enableRowSelection: true,
-    globalFilterFn: fuzzyFilter,
-    onRowSelectionChange: setRowSelection,
-    getCoreRowModel: getCoreRowModel(),
-    onGlobalFilterChange: setGlobalFilter,
-    getFilteredRowModel: getFilteredRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getFacetedRowModel: getFacetedRowModel(),
-    getFacetedUniqueValues: getFacetedUniqueValues(),
-    getFacetedMinMaxValues: getFacetedMinMaxValues(),
   })
-
-  // Filter data based on status
-  useEffect(() => {
-    const filteredData = data?.filter((invoice) => {
-      if (status && invoice.status !== status) return false
-      return true
-    })
-
-    // Note: We don't need to setData here as we're filtering in the table itself
-  }, [status, data])
 
   if (loading) {
     return (
@@ -321,107 +159,76 @@ const InvoiceListTable = () => {
 
   return (
     <Card>
-      <CardContent className="flex justify-between flex-col items-start md:items-center md:flex-row gap-4">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <Typography className="hidden sm:block">Show</Typography>
-            <CustomTextField
-              select
-              value={table.getState().pagination.pageSize}
-              onChange={(e) => table.setPageSize(Number(e.target.value))}
-              className="is-[70px]"
-            >
-              <MenuItem value="10">10</MenuItem>
-              <MenuItem value="25">25</MenuItem>
-              <MenuItem value="50">50</MenuItem>
-            </CustomTextField>
-          </div>
-          {/* <div className="flex items-center gap-4">
-            <CustomTextField
-              select
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              displayEmpty
-              className="is-[160px]"
-            >
-              <MenuItem value="">All Status</MenuItem>
-              <MenuItem value="paid">Paid</MenuItem>
-              <MenuItem value="pending">Pending</MenuItem>
-              <MenuItem value="failed">Failed</MenuItem>
-              <MenuItem value="draft">Draft</MenuItem>
-              <MenuItem value="open">Open</MenuItem>
-              <MenuItem value="void">Void</MenuItem>
-            </CustomTextField>
-          </div> */}
-        </div>
+      <CardContent className="flex justify-between items-center">
+        <Typography variant="h6">Payment History</Typography>
+        <CustomTextField
+          select
+          value={table.getState().pagination.pageSize}
+          onChange={(e) => table.setPageSize(Number(e.target.value))}
+          style={{ width: "70px" }}
+        >
+          <MenuItem value={10}>10</MenuItem>
+          <MenuItem value={25}>25</MenuItem>
+          <MenuItem value={50}>50</MenuItem>
+        </CustomTextField>
       </CardContent>
-      <div className="overflow-x-auto">
-        <table className={tableStyles.table}>
+
+      <div style={{ overflowX: "auto" }}>
+        <table
+          style={{
+            width: "100%",
+            borderCollapse: "collapse",
+            border: "1px solid #30334A",
+          }}
+        >
           <thead>
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
-                  <th key={header.id}>
-                    {header.isPlaceholder ? null : (
-                      <>
-                        <div
-                          className={classnames({
-                            "flex items-center": header.column.getIsSorted(),
-                            "cursor-pointer select-none": header.column.getCanSort(),
-                          })}
-                          onClick={header.column.getToggleSortingHandler()}
-                        >
-                          {flexRender(header.column.columnDef.header, header.getContext())}
-                          {{
-                            asc: <i className="tabler-chevron-up text-xl" />,
-                            desc: <i className="tabler-chevron-down text-xl" />,
-                          }[header.column.getIsSorted() as "asc" | "desc"] ?? null}
-                        </div>
-                      </>
-                    )}
+                  <th
+                    key={header.id}
+                    style={{
+                      border: "1px solid #30334A",
+                      padding: "0.75rem",
+                      textAlign: "left",
+                    }}
+                  >
+                    {flexRender(header.column.columnDef.header, header.getContext())}
                   </th>
                 ))}
               </tr>
             ))}
           </thead>
-          {table.getFilteredRowModel().rows.length === 0 ? (
-            <tbody>
-              <tr>
-                <td colSpan={table.getVisibleFlatColumns().length} className="text-center">
-                  No data available
-                </td>
+          <tbody>
+            {table.getRowModel().rows.map((row) => (
+              <tr key={row.id}>
+                {row.getVisibleCells().map((cell) => (
+                  <td
+                    key={cell.id}
+                    style={{
+                      border: "1px solid #30334A",
+                      padding: "0.75rem",
+                    }}
+                  >
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </td>
+                ))}
               </tr>
-            </tbody>
-          ) : (
-            <tbody>
-              {table
-                .getRowModel()
-                .rows.slice(0, table.getState().pagination.pageSize)
-                .map((row) => {
-                  return (
-                    <tr key={row.id} className={classnames({ selected: row.getIsSelected() })}>
-                      {row.getVisibleCells().map((cell) => (
-                        <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
-                      ))}
-                    </tr>
-                  )
-                })}
-            </tbody>
-          )}
+            ))}
+          </tbody>
         </table>
       </div>
+
       <TablePagination
-        component={() => <TablePaginationComponent table={table} />}
+        component={() => <TablePaginationComponent table={table as any} />}
         count={table.getFilteredRowModel().rows.length}
         rowsPerPage={table.getState().pagination.pageSize}
         page={table.getState().pagination.pageIndex}
-        onPageChange={(_, page) => {
-          table.setPageIndex(page)
-        }}
+        onPageChange={(_, page) => table.setPageIndex(page)}
         onRowsPerPageChange={(e) => table.setPageSize(Number(e.target.value))}
       />
     </Card>
   )
 }
-
+// ,mmn 
 export default InvoiceListTable

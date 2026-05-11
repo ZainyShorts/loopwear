@@ -141,7 +141,7 @@ const Register = ({ mode }: { mode: SystemMode }) => {
               id="name"
               type="text"
               placeholder="Enter company name"
-              className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent transition-all"
+              className="w-full px-4 py-3 bg-white/80 backdrop-blur-sm border border-white/30 rounded-xl text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-all"
               {...register("name", { required: "Company name is required" })}
             />
             {errors.name && <p className="text-red-200 text-xs mt-1">{errors.name.message}</p>}
@@ -157,7 +157,7 @@ const Register = ({ mode }: { mode: SystemMode }) => {
                 id="first_name"
                 type="text"
                 placeholder="Enter your first name"
-                className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 bg-white/80 backdrop-blur-sm border border-white/30 rounded-xl text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-all"
                 {...register("first_name", { required: "First name is required" })}
               />
               {errors.first_name && <p className="text-red-200 text-xs mt-1">{errors.first_name.message}</p>}
@@ -171,7 +171,7 @@ const Register = ({ mode }: { mode: SystemMode }) => {
                 id="last_name"
                 type="text"
                 placeholder="Enter your last name"
-                className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 bg-white/80 backdrop-blur-sm border border-white/30 rounded-xl text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-all"
                 {...register("last_name", { required: "Last name is required" })}
               />
               {errors.last_name && <p className="text-red-200 text-xs mt-1">{errors.last_name.message}</p>}
@@ -188,7 +188,7 @@ const Register = ({ mode }: { mode: SystemMode }) => {
                 id="email"
                 type="email"
                 placeholder="Enter your email"
-                className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 bg-white/80 backdrop-blur-sm border border-white/30 rounded-xl text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-all"
                 {...register("email", { required: "Email is required" })}
               />
               {errors.email && <p className="text-red-200 text-xs mt-1">{errors.email.message}</p>}
@@ -202,7 +202,7 @@ const Register = ({ mode }: { mode: SystemMode }) => {
                 id="mobile"
                 type="text"
                 placeholder="Enter your mobile"
-                className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 bg-white/80 backdrop-blur-sm border border-white/30 rounded-xl text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-all"
                 {...register("mobile", { required: "Mobile number is required" })}
               />
               {errors.mobile && <p className="text-red-200 text-xs mt-1">{errors.mobile.message}</p>}
@@ -219,7 +219,7 @@ const Register = ({ mode }: { mode: SystemMode }) => {
                 id="password"
                 type={isPasswordShown ? "text" : "password"}
                 placeholder="••••••••••"
-                className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 bg-white/80 backdrop-blur-sm border border-white/30 rounded-xl text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-all"
                 {...register("password", { required: "Password is required" })}
               />
               <button
@@ -267,7 +267,7 @@ const Register = ({ mode }: { mode: SystemMode }) => {
                 id="country"
                 type="text"
                 placeholder="Enter your country"
-                className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 bg-white/80 backdrop-blur-sm border border-white/30 rounded-xl text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-all"
                 {...register("country", { required: "Country is required" })}
               />
               {errors.country && <p className="text-red-200 text-xs mt-1">{errors.country.message}</p>}
@@ -281,7 +281,7 @@ const Register = ({ mode }: { mode: SystemMode }) => {
                 id="city"
                 type="text"
                 placeholder="Enter your city"
-                className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 bg-white/80 backdrop-blur-sm border border-white/30 rounded-xl text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-all"
                 {...register("city", { required: "City is required" })}
               />
               {errors.city && <p className="text-red-200 text-xs mt-1">{errors.city.message}</p>}
@@ -297,7 +297,7 @@ const Register = ({ mode }: { mode: SystemMode }) => {
               id="address"
               type="text"
               placeholder="Enter your address"
-              className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent transition-all"
+              className="w-full px-4 py-3 bg-white/80 backdrop-blur-sm border border-white/30 rounded-xl text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-all"
               {...register("address", { required: "Address is required" })}
             />
             {errors.address && <p className="text-red-200 text-xs mt-1">{errors.address.message}</p>}
@@ -312,7 +312,7 @@ const Register = ({ mode }: { mode: SystemMode }) => {
               id="postalCode"
               type="text"
               placeholder="Enter postal code"
-              className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent transition-all"
+              className="w-full px-4 py-3 bg-white/80 backdrop-blur-sm border border-white/30 rounded-xl text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-all"
               {...register("postalCode", { required: "Postal code is required" })}
             />
             {errors.postalCode && <p className="text-red-200 text-xs mt-1">{errors.postalCode.message}</p>}

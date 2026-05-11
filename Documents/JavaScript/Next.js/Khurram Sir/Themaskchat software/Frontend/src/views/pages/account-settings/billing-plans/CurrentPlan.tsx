@@ -1,490 +1,170 @@
-// "use client"
-
-// // MUI Imports
-// import Card from "@mui/material/Card"
-// import CardHeader from "@mui/material/CardHeader"
-// import CardContent from "@mui/material/CardContent"
-// import Grid from "@mui/material/Grid"
-// import Typography from "@mui/material/Typography"
-// import Button from "@mui/material/Button"
-// import Chip from "@mui/material/Chip"
-// import Alert from "@mui/material/Alert"
-// import AlertTitle from "@mui/material/AlertTitle"
-// import LinearProgress from "@mui/material/LinearProgress"
-// import type { ButtonProps } from "@mui/material/Button"
-
-// // Type Imports
-// import type { PricingPlanType } from "@/types/pages/pricingTypes"
-// import type { ThemeColor } from "@core/types"
-// import { differenceInDays, format, parseISO } from "date-fns"
-
-// // Component Imports
-// import ConfirmationDialog from "@components/dialogs/confirmation-dialog"
-// import OpenDialogOnElementClick from "@components/dialogs/OpenDialogOnElementClick"
-// import { useAuthStore } from "@/store/authStore"
-// import { loadStripe } from "@stripe/stripe-js"
-// import { ENDPOINTS, getBaseUrl } from "@/api/vars/vars"
-// import { useEffect, useState } from "react"
-// import ConfirmationModal from "@/components/dialogs/confirm-modal"
-// import PayPalSubscribeButton from "./PaypalButton"
-
-// // Type definitions for subscription data
-// interface SubscriptionData {
-//   plan_type: string
-//   end_date: string
-//   start_date: string
-//   status: "active"  | "canceled" | "expired"
-//   provider_type: "stripe" | "paypal"
-// }
-
-// interface User {
-//   subscription: boolean
-//   email: string
-// }
-
-// const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISH_KEY as string)
-
-// const CurrentPlan = ({ data }: { data: PricingPlanType[] }) => {
-//   const buttonProps = (
-//     children: string,
-//     color: ThemeColor,
-//     variant: ButtonProps["variant"],
-//     disabled?: boolean,
-//   ): ButtonProps => ({
-//     children,
-//     variant,
-//     color,
-//     disabled,
-//   })
-
-//   const { user }: { user: User | null } = useAuthStore()
-  
-
-//   const [subData, setSubData] = useState<SubscriptionData | undefined>(undefined)
-//   const hasSubscription = user?.subscription === true
-//   //confirmation modal for delete
-//   const [isModalOpen, setIsModalOpen] = useState(false)
-//   const [hideBtn,setHideBtn] = useState(false)
-
-//   // Fetch data from API
-//   const fetchSubscription = async () => {
-//     try {
-//       const authToken = localStorage.getItem("auth_token")
-
-      
-
-//       if (!authToken) {
-//         throw new Error("No authentication token found")
-//       }
-
-//       const response = await fetch(`${getBaseUrl()}account/${ENDPOINTS.subscription}/`, {
-//         method: "GET",
-//         headers: {
-//           Authorization: `Token ${authToken}`,
-//           "Content-Type": "application/json",
-//         },
-//       })
-
-//       if(response.status === 401){
-//       window.location.href = '/en/login'
-//     }
-
-//       if (!response.ok) {
-//         throw new Error(`HTTP error! status: ${response.status}`)
-//       }
-
-//       const result: SubscriptionData = await response.json()
-//       console.log(result)
-//       setSubData(result)
-//     } catch (err) {
-//       console.error("Error fetching invoices:", err)
-//     }
-//   }
-//   useEffect(() => {
-
-//     fetchSubscription()
-//   }, [])
-
-//   const handleStripePayment = async () => {
-//     console.log("Stripe payment initiated")
-//     try {
-//       const stripe = await stripePromise;
-
-//       const response = await fetch(`${getBaseUrl()}account/${ENDPOINTS.stripeCheckout}/`, {
-//         method: 'POST',
-//         headers: {
-//           Authorization: `Token ${localStorage.getItem("auth_token")}`,
-//           "Content-Type": "application/json",
-//         }
-//       });
-
-//       if(response.status === 401){
-//       window.location.href = '/en/login'
-//     }
-
-//       if (!response.ok) {
-//         throw new Error(`HTTP error! status: ${response.status}`);
-//       }
-
-//       const session = await response.json();
-
-//       console.log("Session response:", session);
-
-//       if (stripe) {
-//         const { error } = await stripe.redirectToCheckout({
-//           sessionId: session.sessionId,
-//         });
-
-//         if (error) {
-//           console.error("Error redirecting to checkout:", error);
-//         }
-//       } else {
-//         console.error("Stripe.js failed to load.");
-//       }
-//     } catch (err) {
-//       console.error("Checkout error:", err);
-//     }
-//   }
-
-
-
-//   const cancelUserSubscription = async () => {
-//   setHideBtn(true)
-//   try {
-//     const authToken = localStorage.getItem("auth_token");
-
-//     if (!authToken) {
-//       throw new Error("No authentication token found");
-//     }
-
-//     const response = await fetch(`${getBaseUrl()}account/${ENDPOINTS.cancelSubscription}/`, {
-//       method: "POST",
-//       headers: {
-//         Authorization: `Token ${authToken}`,
-//         "Content-Type": "application/json",
-//       },
-//     });
-
-//     if(response.status === 401){
-//       window.location.href = '/en/login'
-//     }
-
-//     if (!response.ok) {
-//       const errorData = await response.json();
-//       throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-//     }
-
-//     const result = await response.json();
-//     fetchSubscription()
-
-//     // Optional: Refresh subscription data    
-//   } catch (err) {
-//     setHideBtn(false)
-//     console.error("Error cancelling subscription:", err);
-//   }
-// };
-
-// const renewStripeSubscription = async () => {
-//   try {
-//     const authToken = localStorage.getItem("auth_token");
-
-//     if (!authToken) {
-//       throw new Error("No authentication token found");
-//     }
-
-//     const response = await fetch(`${getBaseUrl()}account/${ENDPOINTS.renewSubscription}/`, {
-//       method: "POST",
-//       headers: {
-//         Authorization: `Token ${authToken}`,
-//         "Content-Type": "application/json",
-//       },
-//     });
-
-//     if(response.status === 401){
-//       window.location.href = '/en/login'
-//     }
-    
-//     if (!response.ok) {
-//       throw new Error(`HTTP error! status: ${response.status}`);
-//     }
-    
-//     const result = await response.json();
-//     console.log(result)
-    
-//     // If there's a client secret, we need to complete payment
-//     if (result.client_secret) {
-//       const stripe = await stripePromise;
-//       if (stripe) {
-//         const { error } = await stripe.confirmPayment({
-//           clientSecret: result.client_secret,
-//           // Add any additional payment method details if needed
-//           confirmParams: {
-//             return_url: `${window.location.origin}/payment/success`,
-//           },
-//         });
-
-//         if (error) {
-//           console.error("Payment confirmation error:", error);
-//         }
-//       }
-//     } 
-//     fetchSubscription(); // Refresh subscription data
-//   } catch (err) {
-//     console.error("Error renewing subscription:", err);
-//   }
-// };
-
-
-//   return (
-//     <>
-//     <ConfirmationModal
-//                         isOpen={isModalOpen}
-//                         onClose={() => setIsModalOpen(false)}
-//                         onConfirm={cancelUserSubscription}
-//                         title="Confirm Action"
-//                         message="Are you sure you want to proceed with this action? This cannot be undone."
-//                       />
-//     <Card>
-//       <CardHeader title={hasSubscription ? "Current Plan" : "Available Plan"} />
-//       <CardContent>
-//         <Grid container spacing={6}>
-//           <Grid item xs={12} md={6} className="flex flex-col gap-6">
-//             <div className="flex flex-col gap-1">
-//               <Typography color="text.primary" className="font-medium">
-//                 {hasSubscription ? "Your Current Plan" : "Baasic Plan"}
-//               </Typography>
-//               <Typography>
-//                 {hasSubscription
-//                   ? `You are subscribed to our ${subData?.plan_type} plan`
-//                   : "Get access to all basic features"}
-//               </Typography>
-//             </div>
-
-//             {hasSubscription && (
-//               <div className="flex flex-col gap-1">
-//                 {subData && (
-//                   <Typography color="text.primary" className="font-medium">
-//                     Active until {format(parseISO(subData?.end_date), "MMM dd, yyyy")}
-//                   </Typography>
-//                 )}
-//                 <Typography>We will send you a notification upon subscription</Typography>
-//               </div>
-//             )}
-
-//             {user?.subscription ? (
-//               <Typography color="success.main" className="font-medium">
-//                 You are subscribed to a basic plan.
-//               </Typography>
-//             ) : (
-//               <div className="flex flex-col gap-1">
-//                 <div className="flex items-center gap-1.5">
-//                   <Typography color="text.primary" className="font-medium">
-//                     $100 Per Month
-//                   </Typography>
-//                   <Chip color="primary" variant="tonal" label="Basic" size="small" />
-//                 </div>
-//                 <Typography>Full access to all features and {subData?.plan_type} support</Typography>
-//               </div>
-//             )}
-//           </Grid>
-
-//           <Grid item xs={12} md={6} className="flex flex-col gap-6">
-//   {hasSubscription && (subData?.status === "active" || subData?.status === "canceled") ? (
-//     (() => {
-//       const startDate = parseISO(subData.start_date);
-//       const endDate = parseISO(subData.end_date);
-//       const totalDays = differenceInDays(endDate, startDate);
-//       const daysUsed = differenceInDays(new Date(), startDate);
-//       const daysRemaining = Math.max(totalDays - daysUsed, 0);
-//       const progress = Math.min((daysUsed / totalDays) * 100, 100).toFixed(0);
-
-//       return (
-//         <>
-//           <Alert severity={subData.status === "active" ? "info" : "warning"}>
-//             <AlertTitle>
-//               {subData.status === "active"
-//                 ? "Subscription Active"
-//                 : "Subscription Canceled"}
-//             </AlertTitle>
-//             {subData.status === "active" ? (
-//               <>
-//                 Your <strong>{subData.plan_type}</strong> plan is currently active via{" "}
-//                 <strong>{subData.provider_type}</strong>.
-//               </>
-//             ) : (
-//               <>
-//                 You’ve canceled your subscription. Your <strong>{subData.plan_type}</strong> plan remains active via{" "}
-//                 <strong>{subData.provider_type}</strong> until the end of the billing cycle.
-//               </>
-//             )}
-//           </Alert>
-//           {/* <div className="flex flex-col gap-1">
-//             <div className="flex items-center justify-between">
-//               <Typography color="text.primary" className="font-medium">
-//                 Days
-//               </Typography>
-//               <Typography color="text.primary" className="font-medium">
-//                 {daysUsed} of {totalDays} Days
-//               </Typography>
-//             </div>
-//             <LinearProgress variant="determinate" value={Number.parseFloat(progress)} />
-//             <Typography variant="body2">
-//               {daysRemaining} day{daysRemaining !== 1 ? "s" : ""} remaining in your current billing cycle
-//             </Typography>
-//           </div> */}
-//         </>
-//       );
-//     })()
-//   ) : (
-//     <Alert severity="warning">
-//       <AlertTitle>No Active Subscription</AlertTitle>
-//       Subscribe now to access all basic features.
-//     </Alert>
-//   )}
-// </Grid>
-
-
-//           <Grid item xs={12}>
-            
-//             <div className="flex flex-col gap-4">
-//               {/* Action Buttons */}
-//               {subData?.status == "active" &&  (
-//                 <div className="flex gap-4 flex-wrap">
-//                     <Button
-//                       {...buttonProps("Cancel Subscription", "error", "outlined", !hasSubscription)}
-//                       onClick={() => setIsModalOpen(true)} // Replace with your actual function
-//                     >
-//                       Cancel Subscription
-//                     </Button>
-//                   </div>
-
-//               )}
-//               {subData?.status == "canceled" && subData.provider_type == "stripe" &&  (
-//                 <div className="flex gap-4 flex-wrap">
-//                     <Button
-//                       {...buttonProps("Renew Subscription", "error", "outlined", !hasSubscription)}
-//                       onClick={renewStripeSubscription} // Replace with your actual function
-//                     >
-//                       Renew Subscription
-//                     </Button>
-//                   </div>
-
-//               )}
-               
-
-//               {/* Payment Method Buttons - Only show if no subscription */}
-//               {!hasSubscription && (
-//                 <>
-//                   <Typography variant="h6" color="text.primary" className="font-medium mt-4">
-//                     Choose Payment Method
-//                   </Typography>
-//                   <div className="flex gap-3 flex-wrap">
-                     
-//                      <div className="flex items-center gap-4 flex-wrap">
-
-
-//   {/* PayPal Buttons (4 funding sources) incnluding stripe  */}
-//   <PayPalSubscribeButton handleStripePayment={handleStripePayment} userEmail={user!.email} />
-// </div>
-
-
-                    
-//                   </div>
-//                 </>
-//               )}
-//             </div>
-//           </Grid>
-//         </Grid>
-//       </CardContent>
-//     </Card>
-//     </>
-//   )
-// }
-
-// export default CurrentPlan
-
-
 "use client"
 
-// MUI Imports
-import Card from "@mui/material/Card"
-import CardHeader from "@mui/material/CardHeader"
-import CardContent from "@mui/material/CardContent"
-import Grid from "@mui/material/Grid"
-import Typography from "@mui/material/Typography"
-import Button from "@mui/material/Button"
-import Chip from "@mui/material/Chip"
-import Alert from "@mui/material/Alert"
-import AlertTitle from "@mui/material/AlertTitle"
-import LinearProgress from "@mui/material/LinearProgress"
-import type { ButtonProps } from "@mui/material/Button"
-
-// Type Imports
-import type { PricingPlanType } from "@/types/pages/pricingTypes"
-import type { ThemeColor } from "@core/types"
-import { differenceInDays, format, parseISO } from "date-fns"
-
-// Component Imports
-import ConfirmationDialog from "@components/dialogs/confirmation-dialog"
-import OpenDialogOnElementClick from "@components/dialogs/OpenDialogOnElementClick"
-import { useAuthStore } from "@/store/authStore"
-import { loadStripe } from "@stripe/stripe-js"
-import { ENDPOINTS, getBaseUrl } from "@/api/vars/vars"
 import { useEffect, useState } from "react"
-import ConfirmationModal from "@/components/dialogs/confirm-modal"
-import PayPalSubscribeButton from "./PaypalButton"
+import { format, parseISO, differenceInDays } from "date-fns"
+import { getBaseUrl } from "../../../../api/vars/vars"
 
-// Type definitions for subscription data
-interface SubscriptionData {
-  plan_type: string
-  end_date: string
-  start_date: string
-  status: "active"  | "canceled" | "expired"
-  provider_type: "stripe" | "paypal"
-}
 
-interface User {
-  subscription: boolean
+interface Payment {
+  stripe_payment_intent_id: string
+  amount: number
+  currency: string
+  status: "succeeded" | "processing" | "requires_payment_method" | "canceled"
   email: string
+  created_at: string
 }
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISH_KEY as string)
+interface Subscription {
+  stripe_subscription_id: string
+  plan_type: string
+  status: "active" | "past_due" | "canceled" | "unpaid" | "incomplete"
+  current_period_end: string
+}
 
-const CurrentPlan = ({ data }: { data: PricingPlanType[] }) => {
-  const buttonProps = (
-    children: string,
-    color: ThemeColor,
-    variant: ButtonProps["variant"],
-    disabled?: boolean,
-  ): ButtonProps => ({
-    children,
-    variant,
-    color,
-    disabled,
-  })
+interface TransactionDetailsResponse {
+  email: string
+  subscription_status: "active" | "inactive" | "canceled" | "past_due"
+  payments: Payment[]
+  subscriptions: Subscription[]
+  stripe_customer_id?: string
+}
 
-  const { user }: { user: User | null } = useAuthStore()
-  
+// Add interface for Stripe subscription check
+interface StripeSubscriptionCheck {
+  recurring: boolean
+  status: string
+  subscription_id: string
+  cancel_at_period_end: boolean
+  current_period_end: string
+}
 
-  const [subData, setSubData] = useState<SubscriptionData | undefined>(undefined)
-  const hasSubscription = user?.subscription === true
-  //confirmation modal for delete
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [hideBtn, setHideBtn] = useState(false)
-  const [renewLoading, setRenewLoading] = useState(false)
+// Status badge component with theme colors
+const StatusBadge = ({ status }: { status: string }) => {
+  const getStatusConfig = (status: string) => {
+    const configs: { [key: string]: { bg: string; text: string; dot: string } } = {
+      active: { bg: "#30334A", text: "#FFFFFF", dot: "#FFDB1A" },
+      succeeded: { bg: "#30334A", text: "#FFFFFF", dot: "#FFDB1A" },
+      past_due: { bg: "#30334A", text: "#FFDB1A", dot: "#FFDB1A" },
+      canceled: { bg: "#30334A", text: "#FF0000", dot: "#FF0000" },
+      processing: { bg: "#30334A", text: "#00BFFF", dot: "#00BFFF" },
+      incomplete: { bg: "#30334A", text: "#FFA500", dot: "#FFA500" },
+      inactive: { bg: "#30334A", text: "#808080", dot: "#808080" },
+      no_subscription: { bg: "#30334A", text: "#808080", dot: "#808080" },
+      "active (canceling)": { bg: "#30334A", text: "#FFDB1A", dot: "#FFDB1A" },
+      "canceled (active until expiry)": { bg: "#30334A", text: "#FFDB1A", dot: "#FFDB1A" },
+    }
+    return configs[status] || { bg: "#30334A", text: "#FFFFFF", dot: "#FFDB1A" }
+  }
 
-  // Fetch data from API
-  const fetchSubscription = async () => {
+  const config = getStatusConfig(status)
+
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "6px",
+        padding: "4px 10px",
+        borderRadius: "9999px",
+        fontSize: "0.625rem",
+        fontWeight: 500,
+        backgroundColor: config.bg,
+        color: config.text,
+      }}
+    >
+      <span
+        style={{
+          width: "6px",
+          height: "6px",
+          borderRadius: "50%",
+          backgroundColor: config.dot,
+        }}
+      />
+      {status.toUpperCase()}
+    </span>
+  )
+}
+
+// Stat Card component
+const StatCard = ({ title, value, subValue, icon }: { title: string; value: any; subValue?: string; icon: string }) => (
+  <div
+    style={{
+      backgroundColor: "#1F1F33",
+      border: "1px solid #30334A",
+      borderRadius: "12px",
+      padding: "20px",
+      color: "#FFFFFF",
+    }}
+  >
+    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start" }}>
+      <div>
+        <p style={{ fontSize: "0.875rem", color: "#FFDB1A", marginBottom: "4px" }}>{title}</p>
+        <div style={{ fontSize: "1.5rem", fontWeight: 600 }}>{value}</div>
+        {subValue && <p style={{ fontSize: "0.75rem", color: "#FFDB1A", marginTop: "4px" }}>{subValue}</p>}
+      </div>
+      <div
+        style={{
+          padding: "8px",
+          borderRadius: "8px",
+          backgroundColor: "#30334A",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <i className={`${icon} text-xl`} style={{ color: "#FFDB1A" }} />
+      </div>
+    </div>
+  </div>
+)
+
+// Info Banner Component
+const InfoBanner = ({ message, type }: { message: string; type: "warning" | "info" | "success" }) => {
+  const colors = {
+    warning: { bg: "rgba(255, 219, 26, 0.1)", border: "#FFDB1A", text: "#FFDB1A" },
+    info: { bg: "rgba(0, 191, 255, 0.1)", border: "#00BFFF", text: "#00BFFF" },
+    success: { bg: "rgba(40, 167, 69, 0.1)", border: "#28a745", text: "#28a745" }
+  }
+
+  const color = colors[type]
+
+  return (
+    <div style={{
+      backgroundColor: color.bg,
+      border: `1px solid ${color.border}`,
+      borderRadius: "8px",
+      padding: "16px",
+      margin: "0 24px 24px 24px",
+      display: "flex",
+      alignItems: "center",
+      gap: "12px"
+    }}>
+      <i className={`tabler-${type === "warning" ? "alert-triangle" : type === "info" ? "info-circle" : "circle-check"}`} 
+         style={{ color: color.text, fontSize: "1.25rem" }} />
+      <p style={{ color: color.text, margin: 0, fontSize: "0.875rem" }}>{message}</p>
+    </div>
+  )
+}
+
+const CurrentPlan = () => {
+  const [transactionData, setTransactionData] = useState<TransactionDetailsResponse | null>(null)
+  const [stripeSubscription, setStripeSubscription] = useState<StripeSubscriptionCheck | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [showCancelModal, setShowCancelModal] = useState(false)
+  const [showRenewModal, setShowRenewModal] = useState(false)
+  const [actionLoading, setActionLoading] = useState(false)
+
+  const fetchTransactionDetails = async () => {
     try {
+      setLoading(true)
       const authToken = localStorage.getItem("auth_token")
-
-      
 
       if (!authToken) {
         throw new Error("No authentication token found")
       }
 
-      const response = await fetch(`${getBaseUrl()}account/${ENDPOINTS.subscription}/`, {
+      const response = await fetch(`${getBaseUrl()}transactions/transactions_details/`, {
         method: "GET",
         headers: {
           Authorization: `Token ${authToken}`,
@@ -492,326 +172,754 @@ const CurrentPlan = ({ data }: { data: PricingPlanType[] }) => {
         },
       })
 
-      if(response.status === 401){
-      window.location.href = '/en/login'
-    }
+      if (response.status === 401) {
+        window.location.href = "/en/login"
+        return
+      }
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
 
-      const result: SubscriptionData = await response.json()
-      console.log(result)
-      setSubData(result)
+      const result: TransactionDetailsResponse = await response.json()
+      console.log("Transaction Data: 000000000", result)
+      setTransactionData(result)
+
+      if (result.stripe_customer_id) {
+        console.log("Checking Stripe subscription for customer ID from transaction details:", result.stripe_customer_id)
+        await checkStripeSubscription(result.stripe_customer_id)
+      }else{
+        console.log("No Stripe customer ID found in transaction details.")
+      }
+
+      setError(null)
     } catch (err) {
-      console.error("Error fetching invoices:", err)
+      console.error("Error fetching transaction details:", err)
+      setError(err instanceof Error ? err.message : "Failed to fetch transaction details")
+    } finally {
+      setLoading(false)
     }
   }
-  useEffect(() => {
 
-    fetchSubscription()
-  }, [])
-
-  const handleStripePayment = async () => {
-    console.log("Stripe payment initiated")
+  const checkStripeSubscription = async (customerId: string) => {
     try {
-      const stripe = await stripePromise;
-
-      const response = await fetch(`${getBaseUrl()}account/${ENDPOINTS.stripeCheckout}/`, {
-        method: 'POST',
+      const response = await fetch(`/api/stripe/check-subscription`, {
+        method: "POST",
         headers: {
-          Authorization: `Token ${localStorage.getItem("auth_token")}`,
           "Content-Type": "application/json",
-        }
-      });
-
-      if(response.status === 401){
-      window.location.href = '/en/login'
-      
-    }
+        },
+        body: JSON.stringify({ customer_id: customerId }),
+      })
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error("Failed to check subscription")
       }
 
-      const session = await response.json();
-
-      console.log("Session response:", session);
-
-      if (stripe) {
-        const { error } = await stripe.redirectToCheckout({
-          sessionId: session.sessionId,
-        });
-
-        if (error) {
-          console.error("Error redirecting to checkout:", error);
-        }
-      } else {
-        console.error("Stripe.js failed to load.");
-      }
+      const data = await response.json()
+      console.log("Stripe subscription data:", data)
+      setStripeSubscription(data)
     } catch (err) {
-      console.error("Checkout error:", err);
+      console.error("Error checking Stripe subscription:", err)
     }
   }
 
+  const cancelSubscription = async () => {
+    try {
+      setActionLoading(true)
+      const authToken = localStorage.getItem("auth_token")
+      if (!authToken) throw new Error("No auth token")
 
+      const subscriptionId = stripeSubscription?.subscription_id || 
+                            activeSubscription?.stripe_subscription_id
 
-  const cancelUserSubscription = async () => {
-  setHideBtn(true)
-  try {
-    const authToken = localStorage.getItem("auth_token");
-
-    if (!authToken) {
-      throw new Error("No authentication token found");
-    }
-
-    const response = await fetch(`${getBaseUrl()}account/${ENDPOINTS.cancelSubscription}/`, {
-      method: "POST",
-      headers: {
-        Authorization: `Token ${authToken}`,
-        "Content-Type": "application/json",
-      },
-    });
-
-    if(response.status === 401){
-      window.location.href = '/en/login'
-    }
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-    }
-
-    const result = await response.json();
-    fetchSubscription()
-
-    // Optional: Refresh subscription data    
-  } catch (err) {
-    setHideBtn(false)
-    console.error("Error cancelling subscription:", err);
-  } finally {
-    setHideBtn(false) // Ensure button is re-enabled even on success
-  }
-};
-
-const renewStripeSubscription = async () => {
-  setRenewLoading(true)
-  try {
-    const authToken = localStorage.getItem("auth_token");
-
-    if (!authToken) {
-      throw new Error("No authentication token found");
-    }
-
-    const response = await fetch(`${getBaseUrl()}account/${ENDPOINTS.renewSubscription}/`, {
-      method: "POST",
-      headers: {
-        Authorization: `Token ${authToken}`,
-        "Content-Type": "application/json",
-      },
-    });
-
-    if(response.status === 401){
-      window.location.href = '/en/login'
-    }
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    const result = await response.json();
-    console.log(result)
-    
-    // If there's a client secret, we need to complete payment
-    if (result.client_secret) {
-      const stripe = await stripePromise;
-      if (stripe) {
-        const { error } = await stripe.confirmPayment({
-          clientSecret: result.client_secret,
-          // Add any additional payment method details if needed
-          confirmParams: {
-            return_url: `${window.location.origin}/payment/success`,
-          },
-        });
-
-        if (error) {
-          console.error("Payment confirmation error:", error);
-        }
+      if (!subscriptionId) {
+        throw new Error("No subscription ID found")
       }
-    } 
-    fetchSubscription(); // Refresh subscription data
-  } catch (err) {
-    console.error("Error renewing subscription:", err);
-  } finally {
-    setRenewLoading(false)
-  }
-};
 
+      console.log("Canceling subscription with ID:", subscriptionId)
+
+      const res = await fetch(`/api/stripe/cancel`, {
+        method: "POST",
+        headers: {
+          Authorization: `Token ${authToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          subscription_id: subscriptionId,
+        }),
+      })
+
+      if (!res.ok) throw new Error("Failed to cancel subscription")
+
+      alert("Your subscription has been canceled successfully. You will have access until the end of your billing period.")
+      
+      await fetchTransactionDetails()
+      setShowCancelModal(false)
+    } catch (err) {
+      alert("Error canceling subscription: " + (err instanceof Error ? err.message : "Unknown error"))
+      console.error(err)
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  const reactivateSubscription = async (subscriptionId: string) => {
+    try {
+      setActionLoading(true)
+      const authToken = localStorage.getItem("auth_token")
+      if (!authToken) throw new Error("No auth token")
+
+
+      if (!subscriptionId) {
+        throw new Error("No subscription ID found. Please contact support.")
+      }
+
+      console.log("Reactivating subscription with ID:", subscriptionId)
+
+      const res = await fetch(`/api/stripe/revert-cancel`, {
+        method: "POST",
+        headers: {
+          Authorization: `Token ${authToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          subscription_id: subscriptionId,
+        }),
+      })
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}))
+        console.error("Failed to reactivate subscription:", errorData)
+      }
+      
+      const responseData = await res.json()
+      console.log("Reactivate response:", responseData)
+      
+      // alert("Your subscription has been reactivated successfully!")
+      
+      await fetchTransactionDetails()
+      setShowRenewModal(false)
+    } catch (err) {
+      alert("Error reactivating subscription: " + (err instanceof Error ? err.message : "Unknown error"))
+      console.error(err)
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchTransactionDetails()
+  }, [])
+
+  if (loading) {
+    return (
+      <div
+        style={{
+          backgroundColor: "#1F1F33",
+          border: "1px solid #30334A",
+          borderRadius: "12px",
+          padding: "32px",
+        }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "48px 0" }}>
+          <div
+            style={{
+              width: "48px",
+              height: "48px",
+              border: "4px solid #30334A",
+              borderTop: "4px solid #FFDB1A",
+              borderRadius: "50%",
+              animation: "spin 1s linear infinite",
+            }}
+          />
+          <p style={{ marginTop: "16px", color: "#FFDB1A" }}>Loading subscription details...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div
+        style={{
+          backgroundColor: "#1F1F33",
+          border: "1px solid #30334A",
+          borderRadius: "12px",
+          padding: "32px",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "12px",
+            backgroundColor: "rgba(255, 219, 26, 0.1)",
+            padding: "16px",
+            borderRadius: "8px",
+          }}
+        >
+          <i className="tabler-alert-circle text-2xl" style={{ color: "#FF0000" }} />
+          <div>
+            <p style={{ fontWeight: 500, color: "#FF0000" }}>Error loading data</p>
+            <p style={{ fontSize: "0.875rem", color: "#FFDB1A" }}>{error}</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!transactionData) {
+    return (
+      <div
+        style={{
+          backgroundColor: "#1F1F33",
+          border: "1px solid #30334A",
+          borderRadius: "12px",
+          padding: "32px",
+          textAlign: "center",
+        }}
+      >
+        <div style={{ padding: "48px 0" }}>
+          <div
+            style={{
+              width: "64px",
+              height: "64px",
+              margin: "0 auto 16px",
+              backgroundColor: "#30334A",
+              borderRadius: "50%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <i className="tabler-receipt text-3xl" style={{ color: "#FFDB1A" }} />
+          </div>
+          <p style={{ color: "#FFDB1A" }}>No transaction data available</p>
+        </div>
+      </div>
+    )
+  }
+
+  const now = new Date()
+  
+  // Find subscriptions - including canceled ones that might be reactivated
+  const activeSubscription = transactionData.subscriptions.find((sub) => {
+    const periodEnd = sub.current_period_end ? parseISO(sub.current_period_end) : null
+    return sub.status === "active" || (sub.status === "canceled" && periodEnd && periodEnd > now)
+  })
+
+  // Find any canceled subscription that might be reactivated (even if expired)
+  const canceledSubscription = transactionData.subscriptions.find((sub) => 
+    sub.status === "canceled"
+  )
+
+  console.log("Active Subscription:", activeSubscription)
+  console.log("Canceled Subscription:", canceledSubscription)
+
+  const periodEnd = activeSubscription?.current_period_end
+    ? parseISO(activeSubscription.current_period_end)
+    : stripeSubscription?.current_period_end 
+      ? parseISO(stripeSubscription.current_period_end as string)
+      : null
+
+  // Determine status based on Stripe data first, then API response
+  let subscriptionStatus = transactionData.subscription_status
+  
+  if (stripeSubscription) {
+    if (stripeSubscription.status === "no_subscription") {
+      subscriptionStatus = "inactive"
+    } else if (stripeSubscription.recurring && !stripeSubscription.cancel_at_period_end) {
+      subscriptionStatus = "active"
+    } else if (stripeSubscription.cancel_at_period_end) {
+      subscriptionStatus = "canceled"
+    } else if (!stripeSubscription.recurring) {
+      subscriptionStatus = "inactive"
+    }
+  }
+
+  const isFullyActive = subscriptionStatus === "active"
+  const isCanceled = subscriptionStatus === "canceled"
+  const isInactive = subscriptionStatus === "inactive"
+  const isPastDue = subscriptionStatus === "past_due"
+
+  // Check if canceled subscription is still within billing period
+  const isCanceledButActive = isCanceled && periodEnd && periodEnd > now
+  const isExpired = isInactive || (isCanceled && periodEnd && periodEnd <= now)
+
+  // Check if subscription is set to cancel at period end
+  const isSetToCancel = stripeSubscription?.cancel_at_period_end || false
+
+  // Get days remaining
+  const daysRemaining = periodEnd ? Math.max(0, differenceInDays(periodEnd, now)) : 0
+
+  // Get subscription ID for actions - prefer active, but fall back to canceled
+  const subscriptionId = stripeSubscription?.subscription_id || 
+                        activeSubscription?.stripe_subscription_id ||
+                        canceledSubscription?.stripe_subscription_id
+
+  // Determine if we have a subscription that can be reactivated
+  const canReactivate = (isCanceledButActive || isSetToCancel || isExpired) && subscriptionId
 
   return (
     <>
-    <ConfirmationModal
-                        isOpen={isModalOpen}
-                        onClose={() => setIsModalOpen(false)}
-                        onConfirm={cancelUserSubscription}
-                        title="Confirm Action"
-                        message="Are you sure you want to proceed with this action? This cannot be undone."
-                      />
-    <Card>
-      <CardHeader title={hasSubscription ? "Current Plan" : "Available Plan"} />
-      <CardContent>
-        <Grid container spacing={6}>
-          <Grid item xs={12} md={6} className="flex flex-col gap-6">
-            <div className="flex flex-col gap-1">
-              <Typography color="text.primary" className="font-medium">
-                {hasSubscription ? "Your Current Plan" : "Baasic Plan"}
-              </Typography>
-              <Typography>
-                {hasSubscription
-                  ? `You are subscribed to our ${subData?.plan_type} plan`
-                  : "Get access to all basic features"}
-              </Typography>
+      {/* Cancel Confirmation Modal */}
+      {showCancelModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            backgroundColor: "rgba(0,0,0,0.8)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "#1F1F33",
+              borderRadius: "12px",
+              padding: "24px",
+              width: "90%",
+              maxWidth: "420px",
+              border: "1px solid #30334A",
+            }}
+          >
+            <h3 style={{ color: "#FFDB1A", marginBottom: "12px", fontSize: "1.25rem", fontWeight: 600 }}>
+              Cancel Subscription?
+            </h3>
+
+            <p style={{ color: "#FFFFFF", fontSize: "0.875rem", marginBottom: "16px" }}>
+              Are you sure you want to cancel your subscription?
+            </p>
+
+            <div style={{ 
+              backgroundColor: "rgba(255, 219, 26, 0.1)", 
+              padding: "12px", 
+              borderRadius: "8px",
+              marginBottom: "20px",
+              border: "1px solid #30334A"
+            }}>
+              <p style={{ color: "#FFDB1A", fontSize: "0.8rem", margin: 0 }}>
+                ⚠ Your account will remain active until {periodEnd ? format(periodEnd, "MMMM dd, yyyy") : "the end of your billing cycle"}.
+                After that date, your subscription will be deactivated.
+              </p>
             </div>
 
-            {hasSubscription && (
-              <div className="flex flex-col gap-1">
-                {subData && (
-                  <Typography color="text.primary" className="font-medium">
-                    Active until {format(parseISO(subData?.end_date), "MMM dd, yyyy")}
-                  </Typography>
-                )}
-                <Typography>We will send you a notification upon subscription</Typography>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px" }}>
+              <button
+                onClick={() => setShowCancelModal(false)}
+                style={{
+                  backgroundColor: "transparent",
+                  color: "#FFFFFF",
+                  border: "1px solid #30334A",
+                  borderRadius: "8px",
+                  padding: "8px 16px",
+                  cursor: "pointer",
+                  fontSize: "0.875rem",
+                  transition: "all 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "#30334A"
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "transparent"
+                }}
+              >
+                No, Keep Plan
+              </button>
+              
+             
+              <button
+                onClick={cancelSubscription}
+                disabled={actionLoading || !subscriptionId}
+                style={{
+                  backgroundColor: "#FF0000",
+                  color: "#FFFFFF",
+                  border: "none",
+                  borderRadius: "8px",
+                  padding: "8px 16px",
+                  cursor: (actionLoading || !subscriptionId) ? "not-allowed" : "pointer",
+                  fontSize: "0.875rem",
+                  opacity: (actionLoading || !subscriptionId) ? 0.5 : 1,
+                  transition: "all 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  if (!actionLoading && subscriptionId) {
+                    e.currentTarget.style.backgroundColor = "#CC0000"
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!actionLoading && subscriptionId) {
+                    e.currentTarget.style.backgroundColor = "#FF0000"
+                  }
+                }}
+              >
+                {actionLoading ? "Cancelling..." : !subscriptionId ? "No ID Found" : "Yes, Cancel"}
+              </button>
+                
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reactivate Confirmation Modal */}
+      {showRenewModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            backgroundColor: "rgba(0,0,0,0.8)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "#1F1F33",
+              borderRadius: "12px",
+              padding: "24px",
+              width: "90%",
+              maxWidth: "420px",
+              border: "1px solid #30334A",
+            }}
+          >
+            <h3 style={{ color: "#FFDB1A", marginBottom: "12px", fontSize: "1.25rem", fontWeight: 600 }}>
+              Reactivate Subscription?
+            </h3>
+
+            <p style={{ color: "#FFFFFF", fontSize: "0.875rem", marginBottom: "16px" }}>
+              Would you like to reactivate your subscription?
+            </p>
+
+            {periodEnd && periodEnd > now ? (
+              <div style={{ 
+                backgroundColor: "rgba(40, 167, 69, 0.1)", 
+                padding: "12px", 
+                borderRadius: "8px",
+                marginBottom: "20px",
+                border: "1px solid #28a745"
+              }}>
+                <p style={{ color: "#28a745", fontSize: "0.8rem", margin: 0 }}>
+                  ✓ Your subscription will be reactivated immediately and you won&apos;t lose access.
+                </p>
+              </div>
+            ) : (
+              <div style={{ 
+                backgroundColor: "rgba(255, 219, 26, 0.1)", 
+                padding: "12px", 
+                borderRadius: "8px",
+                marginBottom: "20px",
+                border: "1px solid #FFDB1A"
+              }}>
+                <p style={{ color: "#FFDB1A", fontSize: "0.8rem", margin: 0 }}>
+                  ⚠ Your subscription has expired. Reactivating will start billing cycle.
+                </p>
               </div>
             )}
 
-            {user?.subscription ? (
-              <Typography color="success.main" className="font-medium">
-                You are subscribed to a basic plan.
-              </Typography>
-            ) : (
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-1.5">
-                  <Typography color="text.primary" className="font-medium">
-                    $100 Per Month
-                  </Typography>
-                  <Chip color="primary" variant="tonal" label="Basic" size="small" />
-                </div>
-                <Typography>Full access to all features and {subData?.plan_type} support</Typography>
-              </div>
-            )}
-          </Grid>
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px" }}>
+              <button
+                onClick={() => setShowRenewModal(false)}
+                style={{
+                  backgroundColor: "transparent",
+                  color: "#FFFFFF",
+                  border: "1px solid #30334A",
+                  borderRadius: "8px",
+                  padding: "8px 16px",
+                  cursor: "pointer",
+                  fontSize: "0.875rem",
+                  transition: "all 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "#30334A"
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "transparent"
+                }}
+              >
+                Cancel
+              </button>
 
-          <Grid item xs={12} md={6} className="flex flex-col gap-6">
-  {hasSubscription && (subData?.status === "active" || subData?.status === "canceled") ? (
-    (() => {
-      const startDate = parseISO(subData.start_date);
-      const endDate = parseISO(subData.end_date);
-      const totalDays = differenceInDays(endDate, startDate);
-      const daysUsed = differenceInDays(new Date(), startDate);
-      const daysRemaining = Math.max(totalDays - daysUsed, 0);
-      const progress = Math.min((daysUsed / totalDays) * 100, 100).toFixed(0);
-
-      return (
-        <>
-          <Alert severity={subData.status === "active" ? "info" : "warning"}>
-            <AlertTitle>
-              {subData.status === "active"
-                ? "Subscription Active"
-                : "Subscription Canceled"}
-            </AlertTitle>
-            {subData.status === "active" ? (
-              <>
-                Your <strong>{subData.plan_type}</strong> plan is currently active via{" "}
-                <strong>{subData.provider_type}</strong>.
-              </>
-            ) : (
-              <>
-                You’ve canceled your subscription. Your <strong>{subData.plan_type}</strong> plan remains active via{" "}
-                <strong>{subData.provider_type}</strong> until the end of the billing cycle.
-              </>
-            )}
-          </Alert>
-          {/* <div className="flex flex-col gap-1">
-            <div className="flex items-center justify-between">
-              <Typography color="text.primary" className="font-medium">
-                Days
-              </Typography>
-              <Typography color="text.primary" className="font-medium">
-                {daysUsed} of {totalDays} Days
-              </Typography>
+              <button
+                onClick={() => reactivateSubscription(canceledSubscription!.stripe_subscription_id)}
+                disabled={actionLoading || !subscriptionId}
+                style={{
+                  backgroundColor: "#28a745",
+                  color: "#FFFFFF",
+                  border: "none",
+                  borderRadius: "8px",
+                  padding: "8px 16px",
+                  cursor: (actionLoading || !subscriptionId) ? "not-allowed" : "pointer",
+                  fontSize: "0.875rem",
+                  opacity: (actionLoading || !subscriptionId) ? 0.5 : 1,
+                  transition: "all 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  if (!actionLoading && subscriptionId) {
+                    e.currentTarget.style.backgroundColor = "#218838"
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!actionLoading && subscriptionId) {
+                    e.currentTarget.style.backgroundColor = "#28a745"
+                  }
+                }}
+              >
+                {actionLoading ? "Reactivating..." : !subscriptionId ? "No ID Found" : "Yes, Reactivate"}
+              </button>
             </div>
-            <LinearProgress variant="determinate" value={Number.parseFloat(progress)} />
-            <Typography variant="body2">
-              {daysRemaining} day{daysRemaining !== 1 ? "s" : ""} remaining in your current billing cycle
-            </Typography>
-          </div> */}
-        </>
-      );
-    })()
-  ) : (
-    <Alert severity="warning">
-      <AlertTitle>No Active Subscription</AlertTitle>
-      Subscribe now to access all basic features.
-    </Alert>
-  )}
-</Grid>
+          </div>
+        </div>
+      )}
+
+      <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+        {/* Current Subscription Card */}
+        <div style={{ backgroundColor: "#1F1F33", border: "1px solid #30334A", borderRadius: "12px", overflow: "hidden" }}>
+          <div style={{ 
+            padding: "24px", 
+            borderBottom: "1px solid #30334A", 
+            display: "flex", 
+            justifyContent: "space-between", 
+            alignItems: "center",
+            backgroundColor: "#1F1F33"
+          }}>
+            <h2 style={{ fontSize: "1.25rem", fontWeight: 600, color: "#FFDB1A" }}>Current Plan</h2>
+
+            {/* Current Subscription Buttons */}
+
+     {
+      canceledSubscription?.status != "canceled" && (
+
+      
+      <button
+        onClick={() => setShowCancelModal(true)}
+        disabled={actionLoading}
+        style={{
+          backgroundColor: "#FF0000",
+          color: "#FFFFFF",
+          border: "none",
+          borderRadius: "8px",
+          padding: "8px 16px",
+          cursor: actionLoading ? "not-allowed" : "pointer",
+          fontSize: "0.875rem",
+          fontWeight: 500,
+          opacity: actionLoading ? 0.5 : 1,
+          transition: "all 0.2s",
+        }}
+        onMouseEnter={(e) => {
+          if (!actionLoading) e.currentTarget.style.backgroundColor = "#CC0000"
+        }}
+        onMouseLeave={(e) => {
+          if (!actionLoading) e.currentTarget.style.backgroundColor = "#FF0000"
+        }}
+      >
+        {actionLoading ? "Processing..." : "Cancel Plan"}
+      </button>
+   )
+     }
+       {
+      canceledSubscription?.status == "canceled" && (
+
+      
+      <button
+        onClick={() => setShowRenewModal(true)}
+        disabled={actionLoading || !subscriptionId}
+        style={{
+          backgroundColor: "#28a745",
+          color: "#FFFFFF",
+          border: "none",
+          borderRadius: "8px",
+          padding: "8px 16px",
+          cursor: actionLoading ? "not-allowed" : "pointer",
+          fontSize: "0.875rem",
+          fontWeight: 500,
+          opacity: actionLoading ? 0.5 : 1,
+          transition: "all 0.2s",
+        }}
+        onMouseEnter={(e) => {
+          if (!actionLoading) e.currentTarget.style.backgroundColor = "#218838"
+        }}
+        onMouseLeave={(e) => {
+          if (!actionLoading) e.currentTarget.style.backgroundColor = "#28a745"
+        }}
+      >
+        {actionLoading ? "Processing..." : "Reactivate Plan"}
+      </button>
+      )}
+   
 
 
-          <Grid item xs={12}>
-            
-            <div className="flex flex-col gap-4">
-              {/* Action Buttons */}
-              {subData?.status == "active" &&  (
-                <div className="flex gap-4 flex-wrap">
-                    <Button
-                      {...buttonProps("Cancel Subscription", "error", "outlined", !hasSubscription || hideBtn)}
-                      onClick={() => setIsModalOpen(true)}
-                      disabled={hideBtn}
-                    >
-                      {hideBtn ? "Cancelling..." : "Cancel Subscription"}
-                    </Button>
-                  </div>
 
+            {/* If no subscription ID but we have transaction data, show contact support */}
+            {!subscriptionId && transactionData.subscriptions.length > 0 && (
+              <button
+                onClick={() => alert("Please contact support to reactivate your subscription.")}
+                style={{
+                  backgroundColor: "#808080",
+                  color: "#FFFFFF",
+                  border: "none",
+                  borderRadius: "8px",
+                  padding: "8px 16px",
+                  cursor: "pointer",
+                  fontSize: "0.875rem",
+                  fontWeight: 500,
+                }}
+              >
+                Contact Support
+              </button>
+            )}
+          </div>
+
+          {/* Show appropriate message based on subscription status */}
+          {isSetToCancel && (
+            <InfoBanner 
+              message={`Your subscription is scheduled to cancel on ${periodEnd ? format(periodEnd, "MMMM dd, yyyy") : "the end of your billing cycle"}. You can reactivate it before then to maintain uninterrupted access.`}
+              type="warning"
+            />
+          )}
+
+          {isCanceledButActive && (
+            <InfoBanner 
+              message={`Your subscription has been canceled and will expire on ${periodEnd ? format(periodEnd, "MMMM dd, yyyy") : "the end of your billing cycle"}. You can reactivate it before then to maintain uninterrupted access.`}
+              type="warning"
+            />
+          )}
+
+          {isExpired && subscriptionId && (
+            <InfoBanner 
+              message="Your subscription has expired. You can reactivate it to start a new billing cycle."
+              type="info"
+            />
+          )}
+
+          {isPastDue && (
+            <InfoBanner 
+              message="Your payment is past due. Please update your payment method to avoid service interruption."
+              type="warning"
+            />
+          )}
+
+          {!subscriptionId && transactionData.subscriptions.length > 0 && (
+            <InfoBanner 
+              message="Subscription ID not found. Please contact support to manage your subscription."
+              type="warning"
+            />
+          )}
+
+          {transactionData.subscriptions.length > 0 ? (
+            <div style={{ 
+              padding: "24px", 
+              display: "grid", 
+              gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", 
+              gap: "16px",
+              backgroundColor: "#1F1F33"
+            }}>
+              <StatCard
+                title="Plan Type"
+                value={
+                  activeSubscription?.plan_type
+                    ? activeSubscription.plan_type.charAt(0).toUpperCase() +
+                      activeSubscription.plan_type.slice(1)
+                    : canceledSubscription?.plan_type
+                      ? canceledSubscription.plan_type.charAt(0).toUpperCase() +
+                        canceledSubscription.plan_type.slice(1)
+                      : "Monthly"
+                }
+                icon="tabler-crown"
+              />
+
+              <StatCard
+                title="Status"
+                value={
+                  <StatusBadge 
+                    status={
+                      isSetToCancel 
+                        ? "active (canceling)" 
+                        : isCanceledButActive 
+                          ? "canceled (active until expiry)" 
+                          : isPastDue 
+                            ? "past due" 
+                            : isExpired
+                              ? "expired"
+                              : subscriptionStatus
+                    } 
+                  />
+                }
+                icon="tabler-circle-check"
+              />
+
+              {periodEnd && (
+                <StatCard
+                  title={isSetToCancel || isCanceledButActive ? "Access Until" : "Next Billing Date"}
+                  value={format(periodEnd, "MMM dd, yyyy")}
+                  subValue={format(periodEnd, "hh:mm a")}
+                  icon="tabler-calendar"
+                />
               )}
-              {subData?.status == "canceled" && subData.provider_type == "stripe" &&  (
-                <div className="flex gap-4 flex-wrap">
-                    <Button
-                      {...buttonProps("Renew Subscription", "error", "outlined", !hasSubscription || renewLoading)}
-                      onClick={renewStripeSubscription}
-                      disabled={renewLoading}
-                    >
-                      {renewLoading ? "Renewing..." : "Renew Subscription"}
-                    </Button>
-                  </div>
 
-              )}
-               
-
-              {/* Payment Method Buttons - Only show if no subscription */}
-              {!hasSubscription && (
-                <>
-                  <Typography variant="h6" color="text.primary" className="font-medium mt-4">
-                    Choose Payment Method
-                  </Typography>
-                  <div className="flex gap-3 flex-wrap">
-                     
-                     <div className="flex items-center gap-4 flex-wrap">
-
-
-  {/* PayPal Buttons (4 funding sources) incnluding stripe  */}
-  <PayPalSubscribeButton handleStripePayment={handleStripePayment} userEmail={user!.email} />
-</div>
-
-
-                    
-                  </div>
-                </>
+              {periodEnd && (
+                <StatCard
+                  title="Days Remaining"
+                  value={daysRemaining}
+                  subValue={isSetToCancel || isCanceledButActive ? "until expiration" : "in current billing cycle"}
+                  icon="tabler-clock"
+                />
               )}
             </div>
-          </Grid>
-        </Grid>
-      </CardContent>
-    </Card>
+          ) : (
+            <div style={{ 
+              padding: "48px 24px", 
+              color: "#FFDB1A",
+              textAlign: "center",
+              backgroundColor: "#1F1F33"
+            }}>
+              <i className="tabler-alert-circle text-4xl" style={{ marginBottom: "12px", opacity: 0.5 }} />
+              <p>No subscription found</p>
+              <button
+                onClick={() => {
+                  window.location.href = "/pricing"
+                }}
+                style={{
+                  backgroundColor: "#FFDB1A",
+                  color: "#1F1F33",
+                  border: "none",
+                  borderRadius: "8px",
+                  padding: "12px 24px",
+                  marginTop: "16px",
+                  cursor: "pointer",
+                  fontSize: "0.875rem",
+                  fontWeight: 600,
+                  transition: "all 0.2s",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = "#FFE55C"
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = "#FFDB1A"
+                }}
+              >
+                Purchase Plan
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Add this style tag for animations */}
+        <style jsx>{`
+          @keyframes spin {
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
     </>
   )
 }

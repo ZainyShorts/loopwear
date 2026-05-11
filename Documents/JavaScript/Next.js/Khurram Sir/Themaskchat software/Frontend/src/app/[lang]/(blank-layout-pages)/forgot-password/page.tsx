@@ -123,7 +123,7 @@ const ForgotPassword = ({ mode }: { mode: SystemMode }) => {
                 id="email"
                 type="email"
                 placeholder="Enter your email"
-                className="w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/30 rounded-xl text-white placeholder:text-white/50 focus:outline-none focus:ring-2 focus:ring-white/50 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 bg-white/80 backdrop-blur-sm border border-white/30 rounded-xl text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-all"
                 {...register("email", {
                   required: "Email is required",
                   pattern: {

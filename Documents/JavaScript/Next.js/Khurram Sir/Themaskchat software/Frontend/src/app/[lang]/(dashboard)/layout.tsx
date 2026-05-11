@@ -20,6 +20,7 @@ import { getDictionary } from '@/utils/getDictionary'
 import { getMode, getSystemMode } from '@core/utils/serverHelpers'
 import SubscriptionGuard from './SubscriptionGuard'
 import PermissionGuard from './PermissionGuard'
+import SubscriptionWarningBanner from './SubscriptionWarningBanner'
 
 // 👇 import the client-side chatbot
 // import ChatbotWidget from './ChatbotWidget'
@@ -32,6 +33,7 @@ const Layout = async ({ children, params }: ChildrenType & { params: { lang: Loc
 
   return (
     <Providers direction={direction}>
+      <SubscriptionWarningBanner />
       <LayoutWrapper
         systemMode={systemMode}
         verticalLayout={
