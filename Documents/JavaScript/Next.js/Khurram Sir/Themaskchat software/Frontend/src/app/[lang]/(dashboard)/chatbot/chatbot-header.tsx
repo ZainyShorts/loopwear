@@ -97,6 +97,7 @@ export default function DashboardHeader({ agents, tokenBalance }: DashboardHeade
           },
         })
 
+        
         if (!res.ok) {
           if (res.status === 401) {
             router.push("/en/login")
@@ -104,8 +105,9 @@ export default function DashboardHeader({ agents, tokenBalance }: DashboardHeade
           }
           throw new Error("Failed to fetch analytics")
         }
-
+        
         const data = await res.json()
+        console.log('analytics api')
         console.log('analytics',data)
         setAnalytics(data)
       } catch (err) {
