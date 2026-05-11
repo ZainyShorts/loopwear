@@ -55,15 +55,13 @@ export interface ApiResponse<T> {
 
 export const inboxApi = {
   // Get customers list
-  getCustomers: async (page = 1, pageSize = 10, search = ""): Promise<ApiResponse<ApiCustomer>> => {
+  getCustomers: async (page = 1, pageSize = 10, search = "", platformFilter = ""): Promise<ApiResponse<ApiCustomer>> => {
     const params = new URLSearchParams({
       page: page.toString(),
       page_size: pageSize.toString(),
     })
-
-    if (search.trim()) {
-      params.append("search", search.trim())
-    }
+    if (search.trim()) params.append("search", search.trim())
+    if (platformFilter) params.append("type", platformFilter)
 
     const response = await fetch(`${API_BASE_URL}/customer/?${params.toString()}`, {
       method: "GET",

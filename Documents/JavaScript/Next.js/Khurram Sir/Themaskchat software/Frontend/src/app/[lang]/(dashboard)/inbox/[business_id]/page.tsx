@@ -57,10 +57,6 @@ import Tooltip from "@mui/material/Tooltip"
 import Divider from "@mui/material/Divider"
 import { useBusinessNotifications } from "@/customHooks/useBusinessNotifications"
 import { formatMessageTime } from "@/utils/dateUtils"
-import { useParams, useSearchParams } from "next/navigation"
-import { getAllBusiness } from "@/api/business"
-import { BusinessDataType } from "@/api/interface/businessInterface"
-import { useStateValidator } from "react-use"
 
 
 interface Customer {
@@ -233,7 +229,7 @@ export default function InboxPage({
 
   // Sub-users for direct chat assignment (owner only)
   const [subUsers, setSubUsers] = useState<{ id: number; name: string; email: string }[]>([])
-  const [assignMenuAnchor, setAssignMenuAnchor] = useState<{ el: HTMLElement; customerId: number } | null>(null)
+  const [assignMenuAnchor, setAssignMenuAnchor] = useState<HTMLElement | null>(null)
 
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -248,6 +244,8 @@ export default function InboxPage({
   )
   const [wsRetryCount, setWsRetryCount] = useState(0)
   const MAX_RETRIES = 5
+  const [platformFilter, setPlatformFilter] = useState("")
+  const [sortOrder, setSortOrder] = useState<"recent" | "az" | "za">("recent")
   const wsReconnectInterval = useRef<NodeJS.Timeout | null>(null)
 
 
@@ -291,13 +289,14 @@ export default function InboxPage({
   }
 
   const fetchCustomers = useCallback(
-    async (pageNum = 0, search = "") => {
+    async (pageNum = 0, search = "", platform = platformFilter) => {
       try {
         setCustomersLoading(true)
         setError(null)
 
         const apiPage = pageNum + 1
-        const response = await inboxApi.getCustomers(apiPage, rowsPerPage, search)
+        const response = await inboxApi.getCustomers(apiPage, rowsPerPage, search, platform)
+
         console.log("customers response", response.results)
 
         const transformedCustomers: Customer[] = response.results.map((customer) => ({
@@ -319,7 +318,7 @@ export default function InboxPage({
         setCustomersLoading(false)
       }
     },
-    [rowsPerPage],
+    [rowsPerPage, platformFilter],
   )
 
   const fetchMessages = useCallback(async (customerId: number) => {
@@ -439,6 +438,10 @@ export default function InboxPage({
     fetchCustomers(page, searchQuery)
   }, [fetchCustomers, page])
 
+  useEffect(() => {
+    setPage(0)
+  }, [platformFilter])
+
   // Load sub-users list for owner (used in direct chat assignment)
   useEffect(() => {
     if (!isOwner) return
@@ -453,10 +456,12 @@ export default function InboxPage({
     }).catch(() => {})
   }, [isOwner])
 
-  const handleAssignCustomer = async (customerId: number, userId: number | null) => {
+  const handleAssignCustomer = async (userId: number | null) => {
+    if (!selectedCustomer) return
     try {
-      await inboxApi.assignCustomerToUser(customerId, userId)
-      setCustomers(prev => prev.map(c => c.id === customerId ? { ...c, assigned_to: userId } : c))
+      await inboxApi.assignCustomerToUser(selectedCustomer.id, userId)
+      setCustomers(prev => prev.map(c => c.id === selectedCustomer.id ? { ...c, assigned_to: userId } : c))
+      setSelectedCustomer(prev => prev ? { ...prev, assigned_to: userId } : prev)
       toast.success(userId ? 'Chat assigned' : 'Assignment removed')
     } catch {
       toast.error('Failed to assign chat')
@@ -901,205 +906,254 @@ export default function InboxPage({
 
 
 
+  const PLATFORM_FILTERS = [
+    { key: "", label: "All" },
+    { key: "whatsapp", label: "WhatsApp", color: "#25D366" },
+    { key: "instagram", label: "Instagram", color: "#E1306C" },
+    { key: "messenger", label: "Messenger", color: "#0084FF" },
+    { key: "telegram", label: "Telegram", color: "#0088cc" },
+  ]
+
+  const getTypeStyle = (type?: string): { bg: string; color: string; label: string } => {
+    switch (type?.toLowerCase()) {
+      case "whatsapp":   return { bg: "#25D366", color: "#fff", label: "WA" }
+      case "instagram":  return { bg: "#E1306C", color: "#fff", label: "IG" }
+      case "messenger":  return { bg: "#0084FF", color: "#fff", label: "MSG" }
+      case "telegram":   return { bg: "#0088cc", color: "#fff", label: "TG" }
+      default:           return { bg: "#9e9e9e", color: "#fff", label: type ?? "?" }
+    }
+  }
+
+  const getMessagePreview = (type?: string, msg?: string) => {
+    switch (type?.toLowerCase()) {
+      case "image":    return "📷 Image"
+      case "video":    return "🎥 Video"
+      case "audio":    return "🔊 Audio"
+      case "pdf":      return "📄 PDF"
+      case "docx":     return "📝 DOCX"
+      case "xlsx":     return "📊 XLSX"
+      case "csv":      return "📁 CSV"
+      case "template": return "📋 Template"
+      case "text":     return capitalizeFirstMessage(msg)
+      default:         return "No messages yet"
+    }
+  }
+
+  const [sortAnchor, setSortAnchor] = useState<HTMLElement | null>(null)
+
+  const displayCustomers = (() => {
+    let list = [...paginatedCustomers]
+    if (sortOrder === "az") list.sort((a, b) => (a.name || "").localeCompare(b.name || ""))
+    if (sortOrder === "za") list.sort((a, b) => (b.name || "").localeCompare(a.name || ""))
+    return list
+  })()
+
   const CustomerListContent = () => (
     <>
-      {/* Search Header */}
-      <Box className="p-4 border-b flex flex-col gap-2">
-        <TextField
-          fullWidth
-          size="small"
-          placeholder="Search customers..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <i className="tabler-search" />
-              </InputAdornment>
-            ),
-          }}
-        />
+      {/* ── Header ── */}
+      <Box sx={{ p: 2, borderBottom: 1, borderColor: "divider", display: "flex", flexDirection: "column", gap: 1.5 }}>
+
+        {/* Search row */}
+        <Box sx={{ display: "flex", gap: 1 }}>
+          <TextField
+            fullWidth
+            size="small"
+            placeholder="Search customers..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <i className="tabler-search" style={{ fontSize: 16 }} />
+                </InputAdornment>
+              ),
+            }}
+          />
+          {/* Sort button */}
+          <Tooltip title="Sort">
+            <IconButton size="small" onClick={e => setSortAnchor(e.currentTarget)}
+              sx={{ border: 1, borderColor: "divider", borderRadius: 1.5, px: 1 }}>
+              <i className="tabler-arrows-sort" style={{ fontSize: 16 }} />
+            </IconButton>
+          </Tooltip>
+        </Box>
+
+        {/* Platform filter chips */}
+        <Box sx={{ display: "flex", gap: 0.75, flexWrap: "wrap" }}>
+          {PLATFORM_FILTERS.map(f => (
+            <Box
+              key={f.key}
+              onClick={() => setPlatformFilter(f.key)}
+              sx={{
+                px: 1.5, py: 0.4,
+                borderRadius: 99,
+                cursor: "pointer",
+                fontSize: "0.72rem",
+                fontWeight: 600,
+                border: "1.5px solid",
+                transition: "all 0.15s",
+                borderColor: platformFilter === f.key ? (f.color || "primary.main") : "divider",
+                backgroundColor: platformFilter === f.key ? (f.color ? f.color + "22" : "primary.main") : "transparent",
+                color: platformFilter === f.key ? (f.color || "primary.main") : "text.secondary",
+                "&:hover": { borderColor: f.color || "primary.main", color: f.color || "primary.main" },
+              }}
+            >
+              {f.label}
+            </Box>
+          ))}
+        </Box>
+
+        {/* Manage Teams (owner only) */}
         {isOwner && (
           <Button
             size="small"
             variant="tonal"
-            startIcon={<i className="tabler-users-group" />}
+            startIcon={<i className="tabler-users-group" style={{ fontSize: 15 }} />}
             onClick={() => setTeamDialogOpen(true)}
-            fullWidth
+            sx={{ borderRadius: 2, fontSize: "0.78rem", py: 0.6 }}
           >
             Manage Teams
           </Button>
         )}
       </Box>
 
-      {/* Customer List */}
+      {/* Sort menu */}
+      <Menu open={Boolean(sortAnchor)} anchorEl={sortAnchor} onClose={() => setSortAnchor(null)}>
+        {[
+          { key: "recent", label: "Most Recent", icon: "tabler-clock" },
+          { key: "az",     label: "A → Z",       icon: "tabler-sort-ascending-letters" },
+          { key: "za",     label: "Z → A",       icon: "tabler-sort-descending-letters" },
+        ].map(opt => (
+          <MuiMenuItem key={opt.key} selected={sortOrder === opt.key}
+            onClick={() => { setSortOrder(opt.key as any); setSortAnchor(null) }}>
+            <i className={`${opt.icon} mr-2`} style={{ fontSize: 16 }} />
+            <Typography variant="body2">{opt.label}</Typography>
+          </MuiMenuItem>
+        ))}
+      </Menu>
+
+      {/* ── Customer List ── */}
       <Box className="flex-1 overflow-y-auto">
         {customersLoading ? (
-          <Box className="flex justify-center items-center h-32">
-            <CircularProgress />
+          <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: 120 }}>
+            <CircularProgress size={28} />
           </Box>
-        ) : paginatedCustomers.length === 0 ? (
-          <Box className="flex flex-col items-center justify-center h-32 p-4">
-            <Typography variant="body2" color="text.secondary" className="text-center">
-              {searchQuery ? `No customers found matching "${searchQuery}"` : "No customers found"}
+        ) : displayCustomers.length === 0 ? (
+          <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: 120, px: 2 }}>
+            <i className="tabler-inbox-off" style={{ fontSize: 32, opacity: 0.3, marginBottom: 8 }} />
+            <Typography variant="body2" color="text.secondary" textAlign="center">
+              {searchQuery ? `No results for "${searchQuery}"` : platformFilter ? `No ${platformFilter} chats` : "No chats yet"}
             </Typography>
           </Box>
         ) : (
           <List disablePadding>
-            {paginatedCustomers.map((customer) => {
-              const getTypeColor = (type?: string) => {
-                switch (type?.toLowerCase()) {
-                  case "whatsapp":
-                    return "success"
-                  case "instagram":
-                    return "error"
-                  case "messenger":
-                    return "primary"
-                  case "telegram":
-                    return "info"
-                  default:
-                    return "default"
-                }
-              }
+            {displayCustomers.map((customer) => {
+              const typeStyle = getTypeStyle(customer.type)
+              const isSelected = selectedCustomer?.id === customer.id
+              const assignedUser = subUsers.find(u => u.id === customer.assigned_to)
 
               return (
-                <ListItem key={customer.id} disablePadding
-                  secondaryAction={isOwner ? (
-                    <Tooltip title={customer.assigned_to ? 'Reassign chat' : 'Assign to user'}>
-                      <IconButton
-                        size="small"
-                        onClick={e => { e.stopPropagation(); setAssignMenuAnchor({ el: e.currentTarget, customerId: customer.id }) }}
-                        sx={{ color: customer.assigned_to ? 'primary.main' : 'text.disabled' }}
-                      >
-                        <i className="tabler-user-check text-sm" />
-                      </IconButton>
-                    </Tooltip>
-                  ) : undefined}
+                <Box
+                  key={customer.id}
+                  onClick={() => handleCustomerSelect(customer)}
+                  sx={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 1.5,
+                    px: 2,
+                    py: 1.5,
+                    cursor: "pointer",
+                    borderBottom: "1px solid",
+                    borderColor: "divider",
+                    backgroundColor: isSelected ? "action.selected" : "transparent",
+                    "&:hover": { backgroundColor: isSelected ? "action.selected" : "action.hover" },
+                    transition: "background 0.15s",
+                  }}
                 >
-                  <ListItemButton
-                    selected={selectedCustomer?.id === customer.id}
-                    onClick={() => handleCustomerSelect(customer)}
-                    className="px-4 py-3"
-                    sx={{ paddingRight: isOwner ? '48px' : undefined }}
-                  >
-                    <ListItemAvatar>
-                      <Avatar>{customer.name?.charAt(0) || "?"}</Avatar>
-                    </ListItemAvatar>
+                  {/* Avatar with platform dot */}
+                  <Box sx={{ position: "relative", flexShrink: 0, mt: 0.25 }}>
+                    <Avatar sx={{ width: 42, height: 42, fontSize: "1rem", bgcolor: isSelected ? "primary.main" : "action.hover" }}>
+                      {customer.name?.charAt(0)?.toUpperCase() || "?"}
+                    </Avatar>
+                    {customer.type && (
+                      <Box sx={{
+                        position: "absolute", bottom: -1, right: -1,
+                        width: 14, height: 14, borderRadius: "50%",
+                        backgroundColor: typeStyle.bg,
+                        border: "2px solid",
+                        borderColor: "background.paper",
+                      }} />
+                    )}
+                  </Box>
 
-                    <ListItemText
-                      primary={
-                        <Box className="flex items-center justify-between w-full">
-                          {/* LEFT: Name */}
-                          <Typography variant="subtitle2" className="font-medium truncate">
-                            {customer.name || "Unknown Customer"}
-                          </Typography>
+                  {/* Content */}
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    {/* Row 1: Name + time */}
+                    <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 0.3 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600, lineHeight: 1.3 }} noWrap>
+                        {customer.name || "Unknown"}
+                      </Typography>
+                      {customer.latest_message_time && (
+                        <Typography variant="caption" color="text.disabled" sx={{ flexShrink: 0, ml: 1 }}>
+                          {formatMessageTime(customer.latest_message_time)}
+                        </Typography>
+                      )}
+                    </Box>
 
-                          {/* RIGHT: Time + Switch */}
-                          {customer.latest_message_time && (
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs text-gray-400">
-                                {formatMessageTime(customer.latest_message_time)}
-                              </span>
+                    {/* Row 2: Message preview */}
+                    <Typography variant="body2" color="text.secondary" noWrap sx={{ fontSize: "0.78rem", mb: 0.6 }}>
+                      {getMessagePreview(customer.latest_message_type, customer.latest_message)}
+                    </Typography>
 
-                              <Switch
-                                edge="end"
-                                checked={customer.allow_chatbot_reply}
-                                onChange={() => handleToggleChatbot(customer)}
-                              />
-                            </div>
-                          )}
-                        </Box>
-                      }
-                      secondary={
-                        <Box className="flex items-center justify-between mt-1">
-                          <Typography variant="body2" color="text.secondary" className="truncate flex-1 mr-2">
-                            {(() => {
-                              const type = customer.latest_message_type?.toLowerCase()
-                              const msg = customer.latest_message || ""
-console.log('customer.latest_message',type)
-                              switch (type) {
-                                case "image":
-                                  return "📷 Image"
-                                case "video":
-                                  return "🎥 Video"
-                                case "audio":
-                                  return "🔊 Audio"
-                                case "pdf":
-                                  return "📄 PDF"
-                                case "docx":
-                                  return "📝 DOCX"
-                                case "xlsx":
-                                  return "📊 XLSX"
-                                case "csv":
-                                  return "📁 CSV"
-                                case "template":
-                                  return "📋 Template"
-                                case "text":
-                                  return `💬 ${capitalizeFirstMessage(msg)}`
-                                default:
-                                  return "No messages yet"
-                              }
-                            })()}
-                          </Typography>
+                    {/* Row 3: controls */}
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                      {/* Platform badge */}
+                      <Box sx={{
+                        px: 1, py: 0.15, borderRadius: 99,
+                        backgroundColor: typeStyle.bg + "22",
+                        color: typeStyle.bg,
+                        fontSize: "0.65rem", fontWeight: 700,
+                        letterSpacing: 0.3,
+                      }}>
+                        {typeStyle.label}
+                      </Box>
 
-                          {customer.type && (
-                            <Chip
-                              label={customer.type}
-                              size="small"
-                              color={getTypeColor(customer.type)}
-                              className="ml-2"
-                            />
-                          )}
+                      {/* Assigned user badge */}
+                      {assignedUser && (
+                        <Tooltip title={`Assigned to ${assignedUser.name}`}>
+                          <Box sx={{
+                            display: "flex", alignItems: "center", gap: 0.4,
+                            px: 1, py: 0.15, borderRadius: 99,
+                            backgroundColor: "primary.main", color: "#fff",
+                            fontSize: "0.65rem", fontWeight: 600,
+                          }}>
+                            <i className="tabler-user" style={{ fontSize: 9 }} />
+                            {assignedUser.name.split(" ")[0]}
+                          </Box>
+                        </Tooltip>
+                      )}
 
-                          {(customer.unreadCount ?? 0) > 0 && (
-                            <Chip
-                              label={customer.unreadCount}
-                              size="small"
-                              color="secondary"
-                              className="min-w-[20px] h-5 ml-2"
-                            />
-                          )}
-                        </Box>
-                      }
-                    />
-                  </ListItemButton>
-                </ListItem>
+                      <Box sx={{ flex: 1 }} />
+
+                      {/* Chatbot toggle */}
+                      <Tooltip title={customer.allow_chatbot_reply ? "Chatbot ON" : "Chatbot OFF"}>
+                        <Switch
+                          size="small"
+                          checked={!!customer.allow_chatbot_reply}
+                          onChange={e => { e.stopPropagation(); handleToggleChatbot(customer) }}
+                          onClick={e => e.stopPropagation()}
+                          sx={{ transform: "scale(0.75)", ml: -0.5 }}
+                        />
+                      </Tooltip>
+
+                    </Box>
+                  </Box>
+                </Box>
               )
             })}
           </List>
         )}
       </Box>
-
-      {/* Direct assignment menu (owner only) */}
-      <Menu
-        open={Boolean(assignMenuAnchor)}
-        anchorEl={assignMenuAnchor?.el}
-        onClose={() => setAssignMenuAnchor(null)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-      >
-        <MuiMenuItem disabled>
-          <Typography variant="caption" color="text.secondary">Assign to</Typography>
-        </MuiMenuItem>
-        {subUsers.map(u => (
-          <MuiMenuItem
-            key={u.id}
-            onClick={() => assignMenuAnchor && handleAssignCustomer(assignMenuAnchor.customerId, u.id)}
-            selected={assignMenuAnchor
-              ? customers.find(c => c.id === assignMenuAnchor.customerId)?.assigned_to === u.id
-              : false}
-          >
-            <Box>
-              <Typography variant="body2">{u.name}</Typography>
-              <Typography variant="caption" color="text.secondary">{u.email}</Typography>
-            </Box>
-          </MuiMenuItem>
-        ))}
-        <Divider />
-        <MuiMenuItem onClick={() => assignMenuAnchor && handleAssignCustomer(assignMenuAnchor.customerId, null)}>
-          <Typography variant="body2" color="error">Remove assignment</Typography>
-        </MuiMenuItem>
-      </Menu>
 
       <Box className="border-t p-0">
         <TablePagination
@@ -1327,7 +1381,7 @@ const TemplateContent = styled(Box)(({ theme }) => ({
                 }}
               >
                 <CustomerListContainer>
-                  <CustomerListContent />
+                  {CustomerListContent()}
                 </CustomerListContainer>
               </Drawer>
 
@@ -1384,6 +1438,17 @@ const TemplateContent = styled(Box)(({ theme }) => ({
                         {/* Regular controls */}
                         {!selectionMode && (
                           <>
+                            {isOwner && (
+                              <Tooltip title={selectedCustomer.assigned_to ? "Change assignment" : "Assign chat"}>
+                                <IconButton
+                                  size="small"
+                                  onClick={e => setAssignMenuAnchor(e.currentTarget)}
+                                  color={selectedCustomer.assigned_to ? "primary" : "default"}
+                                >
+                                  <i className="tabler-user-check text-sm" />
+                                </IconButton>
+                              </Tooltip>
+                            )}
                             <IconButton size="small" onClick={() => setSelectionMode(true)} title="Select messages">
                               <i className="tabler-checkbox text-sm" />
                             </IconButton>
@@ -1702,7 +1767,7 @@ const TemplateContent = styled(Box)(({ theme }) => ({
           ) : (
             <>
               <CustomerListContainer>
-                <CustomerListContent />
+                {CustomerListContent()}
               </CustomerListContainer>
 
               {/* Chat Area for Desktop */}
@@ -1713,10 +1778,24 @@ const TemplateContent = styled(Box)(({ theme }) => ({
                     <Box className="p-4 border-b bg-background-paper">
                       <Box className="flex items-center gap-3">
                         <Avatar>{selectedCustomer.name.charAt(0)}</Avatar>
-                        <Box className="flex-1">
-                          <Typography variant="h6" className="font-medium">
-                            {selectedCustomer.name}
-                          </Typography>
+                        <Box className="flex-1 min-w-0">
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                            <Typography variant="h6" className="font-medium" noWrap>
+                              {selectedCustomer.name}
+                            </Typography>
+                            {(() => {
+                              const assignedUser = subUsers.find(u => u.id === selectedCustomer.assigned_to)
+                              return assignedUser ? (
+                                <Chip
+                                  size="small"
+                                  label={assignedUser.name.split(" ")[0]}
+                                  color="primary"
+                                  variant="tonal"
+                                  sx={{ fontSize: "0.68rem", height: 20 }}
+                                />
+                              ) : null
+                            })()}
+                          </Box>
                           <Typography variant="body2" color="text.secondary">
                             {selectedCustomer.phone_number}
                           </Typography>
@@ -1752,6 +1831,16 @@ const TemplateContent = styled(Box)(({ theme }) => ({
                         {/* Regular controls */}
                         {!selectionMode && (
                           <>
+                            {isOwner && (
+                              <Tooltip title={selectedCustomer.assigned_to ? "Change assignment" : "Assign chat"}>
+                                <IconButton
+                                  onClick={e => setAssignMenuAnchor(e.currentTarget)}
+                                  color={selectedCustomer.assigned_to ? "primary" : "default"}
+                                >
+                                  <i className="tabler-user-check" />
+                                </IconButton>
+                              </Tooltip>
+                            )}
                             <IconButton onClick={() => setSelectionMode(true)} title="Select messages">
                               <i className="tabler-checkbox" />
                             </IconButton>
@@ -2085,6 +2174,43 @@ const TemplateContent = styled(Box)(({ theme }) => ({
       </Dialog>
 
       <VideoModalWrapper />
+
+      {/* ── Assign chat menu (anchored to chat header button) ── */}
+      <Menu
+        open={Boolean(assignMenuAnchor)}
+        anchorEl={assignMenuAnchor}
+        onClose={() => setAssignMenuAnchor(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        transformOrigin={{ vertical: "top", horizontal: "right" }}
+        PaperProps={{ sx: { minWidth: 220, maxHeight: 300 } }}
+      >
+        <Box sx={{ px: 2, py: 1 }}>
+          <Typography variant="caption" color="text.secondary" fontWeight={600}>ASSIGN CHAT TO</Typography>
+        </Box>
+        <Divider />
+        {subUsers.length === 0 ? (
+          <MuiMenuItem disabled><Typography variant="body2">No sub-accounts found</Typography></MuiMenuItem>
+        ) : subUsers.map(u => {
+          const isAssigned = selectedCustomer?.assigned_to === u.id
+          return (
+            <MuiMenuItem key={u.id} onClick={() => handleAssignCustomer(u.id)} sx={{ gap: 1.5 }}>
+              <Avatar sx={{ width: 28, height: 28, fontSize: "0.75rem", bgcolor: isAssigned ? "primary.main" : "action.hover" }}>
+                {u.name.charAt(0).toUpperCase()}
+              </Avatar>
+              <Box sx={{ flex: 1 }}>
+                <Typography variant="body2" fontWeight={isAssigned ? 600 : 400}>{u.name}</Typography>
+                <Typography variant="caption" color="text.secondary">{u.email}</Typography>
+              </Box>
+              {isAssigned && <i className="tabler-check" style={{ fontSize: 14 }} />}
+            </MuiMenuItem>
+          )
+        })}
+        <Divider />
+        <MuiMenuItem onClick={() => handleAssignCustomer(null)} sx={{ color: "error.main" }}>
+          <i className="tabler-user-x mr-2" style={{ fontSize: 14 }} />
+          <Typography variant="body2" color="inherit">Remove assignment</Typography>
+        </MuiMenuItem>
+      </Menu>
 
       {isOwner && (
         <InboxTeamDialog
