@@ -12,7 +12,7 @@ import {
   Switch,
   Typography,
 } from "@mui/material"
-import { SIDEBAR_FEATURES } from "@/libs/rbac/sidebarFeatures"
+import { CONFIGURABLE_FEATURES } from "@/libs/rbac/sidebarFeatures"
 import { hasAccess } from "@/libs/rbac/hasAccess"
 
 interface ManagedUser {
@@ -27,10 +27,10 @@ interface Props {
   onUpdate: (userId: number | string, permissions: string[]) => void
 }
 
-const ALL_KEYS = SIDEBAR_FEATURES.map((f) => f.key)
+const ALL_KEYS = CONFIGURABLE_FEATURES.map((f) => f.key)
 
 const FEATURE_LABELS: Record<string, string> = Object.fromEntries(
-  SIDEBAR_FEATURES.map((f) => [f.key, f.labelKey])
+  CONFIGURABLE_FEATURES.map((f) => [f.key, f.labelKey])
 )
 
 const PermissionManager = ({ user, onUpdate }: Props) => {
@@ -90,7 +90,7 @@ const PermissionManager = ({ user, onUpdate }: Props) => {
       <Divider />
       <CardContent>
         <Stack direction="row" flexWrap="wrap" gap={1}>
-          {SIDEBAR_FEATURES.map((feature) => (
+          {CONFIGURABLE_FEATURES.map((feature) => (
             <FormControlLabel
               key={feature.key}
               control={

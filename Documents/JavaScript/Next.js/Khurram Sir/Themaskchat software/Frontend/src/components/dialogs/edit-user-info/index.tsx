@@ -20,7 +20,7 @@ import DialogCloseButton from '../DialogCloseButton'
 import CustomTextField from '@core/components/mui/TextField'
 import { User } from '@/api/interface/userInterface'
 import { getUserTypes, updateUser } from '@/api/user'
-import { SIDEBAR_FEATURES } from '@/libs/rbac/sidebarFeatures'
+import { CONFIGURABLE_FEATURES } from '@/libs/rbac/sidebarFeatures'
 import { useUserPermissionsStore } from '@/libs/rbac/userPermissionsStore'
 
 type UserRole = { id: number; type: string }
@@ -53,14 +53,13 @@ const EditUserInfo = ({ open, setOpen, data, onTypeAdded }: EditUserInfoProps) =
   const [userTypes, setUserTypes] = useState<UserRole[]>([])
   const [loading, setLoading] = useState(false)
 
-  // Permissions priority: local store (set on create) → backend field → empty (=full access)
+  // Permissions: local store (set on create) → backend field → all features as default
   const storedPermissions = data?.id ? getUserPermissions(data.id) : undefined
   const rawPermissions: string[] = storedPermissions ?? data?.permissions ?? data?.sidebar_permissions ?? []
-  const initFullAccess = rawPermissions.length === 0 || rawPermissions.includes('*')
-  const [fullAccess, setFullAccess] = useState(initFullAccess)
-  const [selectedFeatures, setSelectedFeatures] = useState<string[]>(
-    initFullAccess ? SIDEBAR_FEATURES.map(f => f.key) : rawPermissions
-  )
+  const initSelected = rawPermissions.length === 0 || rawPermissions.includes('*')
+    ? CONFIGURABLE_FEATURES.map(f => f.key)
+    : rawPermissions.filter(k => CONFIGURABLE_FEATURES.some(f => f.key === k))
+  const [selectedFeatures, setSelectedFeatures] = useState<string[]>(initSelected)
 
   const toggleFeature = (key: string) => {
     setSelectedFeatures(prev =>
@@ -86,7 +85,7 @@ const EditUserInfo = ({ open, setOpen, data, onTypeAdded }: EditUserInfoProps) =
   const onSubmit = async (formData: User) => {
     setLoading(true)
     const id = data?.id ?? 0
-    const permissions = fullAccess ? ['*'] : selectedFeatures
+    const permissions = selectedFeatures
     try {
       await updateUser(id, { ...formData, permissions } as any)
       // Also update local permissions store so sidebar refreshes immediately
@@ -198,39 +197,26 @@ const EditUserInfo = ({ open, setOpen, data, onTypeAdded }: EditUserInfoProps) =
               <Divider className='mb-3' />
               <Typography variant='h6' className='mb-3'>Feature Access</Typography>
 
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={fullAccess}
-                    onChange={e => setFullAccess(e.target.checked)}
-                    color='primary'
+              <Box className='grid grid-cols-2 sm:grid-cols-3 gap-1 mt-2 pl-2'>
+                {CONFIGURABLE_FEATURES.map(feature => (
+                  <FormControlLabel
+                    key={feature.key}
+                    control={
+                      <Switch
+                        size='small'
+                        checked={selectedFeatures.includes(feature.key)}
+                        onChange={() => toggleFeature(feature.key)}
+                      />
+                    }
+                    label={
+                      <Box className='flex items-center gap-1'>
+                        <i className={`${feature.icon} text-base text-textSecondary`} />
+                        <Typography variant='body2' className='capitalize'>{feature.labelKey}</Typography>
+                      </Box>
+                    }
                   />
-                }
-                label={<Typography fontWeight={600}>Full Access (all features)</Typography>}
-              />
-
-              {!fullAccess && (
-                <Box className='grid grid-cols-2 sm:grid-cols-3 gap-1 mt-2 pl-2'>
-                  {SIDEBAR_FEATURES.map(feature => (
-                    <FormControlLabel
-                      key={feature.key}
-                      control={
-                        <Switch
-                          size='small'
-                          checked={selectedFeatures.includes(feature.key)}
-                          onChange={() => toggleFeature(feature.key)}
-                        />
-                      }
-                      label={
-                        <Box className='flex items-center gap-1'>
-                          <i className={`${feature.icon} text-base text-textSecondary`} />
-                          <Typography variant='body2' className='capitalize'>{feature.labelKey}</Typography>
-                        </Box>
-                      }
-                    />
-                  ))}
-                </Box>
-              )}
+                ))}
+              </Box>
             </Grid>
 
           </Grid>

@@ -160,15 +160,17 @@ const Login = ({ mode }: { mode: SystemMode }) => {
       if (data.user.subscription === false && Number(user?.user_type) === 1) {
         router.push(getLocalizedUrl("/account-settings", locale))
       } else {
-        if (Number(data.user?.user_type) === 1) {
-          router.push(getLocalizedUrl("/home", locale))
-        } else if (Number(data.user?.user_type) === 2) {
-          const businessId = await fetchBusiness()
-          router.push(`/support/${businessId}`)
-        } else {
-          const businessId = await fetchBusiness()
-          router.push(`/support/${businessId}`)
-        }
+        router.push(getLocalizedUrl("/home", locale))
+        // if (Number(data.user?.user_type) === 1) {
+        //   router.push(getLocalizedUrl("/home", locale))
+        // } else if (Number(data.user?.user_type) === 2) {
+        //   const businessId = await fetchBusiness()
+        //   router.push(`/support/${businessId}`)
+        // } 
+        // else {
+        //   const businessId = await fetchBusiness()
+        //   router.push(`/support/${businessId}`)
+        // }
       }
     } catch (error: any) {
       // Error handling

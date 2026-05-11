@@ -12,7 +12,7 @@ import Box from '@mui/material/Box'
 import CircularProgress from '@mui/material/CircularProgress'
 import toast from 'react-hot-toast'
 
-import { SIDEBAR_FEATURES } from '@/libs/rbac/sidebarFeatures'
+import { CONFIGURABLE_FEATURES } from '@/libs/rbac/sidebarFeatures'
 import { useUserPermissionsStore } from '@/libs/rbac/userPermissionsStore'
 import { updateUser } from '@/api/user'
 
@@ -30,7 +30,7 @@ const FeaturePermissionsCard = ({ userId, userName, initialPermissions }: Props)
   const stored = getUserPermissions(userId) ?? initialPermissions
   const initialFullAccess = !stored || stored.length === 0 || stored.includes('*')
   const initialSelected = initialFullAccess
-    ? SIDEBAR_FEATURES.map(f => f.key)
+    ? CONFIGURABLE_FEATURES.map(f => f.key)
     : stored
 
   const [fullAccess, setFullAccess] = useState(initialFullAccess)
@@ -84,7 +84,7 @@ const FeaturePermissionsCard = ({ userId, userName, initialPermissions }: Props)
 
         {!fullAccess && (
           <Box className='flex flex-col gap-1 pl-2'>
-            {SIDEBAR_FEATURES.map(feature => (
+            {CONFIGURABLE_FEATURES.map(feature => (
               <FormControlLabel
                 key={feature.key}
                 control={

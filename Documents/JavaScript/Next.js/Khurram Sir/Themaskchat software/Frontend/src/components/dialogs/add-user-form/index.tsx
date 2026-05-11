@@ -24,7 +24,7 @@ import Loader from '@/components/loader/Loader'
 import type { User } from '@/api/interface/userInterface'
 import { createUser } from '@/api/user'
 import { useAuthStore } from '@/store/authStore'
-import { SIDEBAR_FEATURES } from '@/libs/rbac/sidebarFeatures'
+import { CONFIGURABLE_FEATURES } from '@/libs/rbac/sidebarFeatures'
 import { useUserPermissionsStore } from '@/libs/rbac/userPermissionsStore'
 
 type AddUserFormProps = {
@@ -47,10 +47,9 @@ const AddUserForm = ({ open, setOpen, onTypeAdded }: AddUserFormProps) => {
   const [isPasswordShown, setIsPasswordShown] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  // Permissions state
-  const [fullAccess, setFullAccess] = useState(true)
+  // Permissions state — all features selected by default
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>(
-    SIDEBAR_FEATURES.map(f => f.key)
+    CONFIGURABLE_FEATURES.map(f => f.key)
   )
 
   const toggleFeature = (key: string) => {
@@ -61,15 +60,14 @@ const AddUserForm = ({ open, setOpen, onTypeAdded }: AddUserFormProps) => {
 
   const handleReset = () => {
     reset()
-    setFullAccess(true)
-    setSelectedFeatures(SIDEBAR_FEATURES.map(f => f.key))
+    setSelectedFeatures(CONFIGURABLE_FEATURES.map(f => f.key))
     setOpen(false)
   }
 
   const onSubmit = (data: User) => {
     setLoading(true)
 
-    const permissions = fullAccess ? ['*'] : selectedFeatures
+    const permissions = selectedFeatures
 
     const submissionData = {
       ...data,
@@ -237,41 +235,28 @@ const AddUserForm = ({ open, setOpen, onTypeAdded }: AddUserFormProps) => {
                 Feature Access
               </Typography>
 
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={fullAccess}
-                    onChange={e => setFullAccess(e.target.checked)}
-                    color='primary'
+              <Box className='grid grid-cols-2 sm:grid-cols-3 gap-1 mt-2 pl-2'>
+                {CONFIGURABLE_FEATURES.map(feature => (
+                  <FormControlLabel
+                    key={feature.key}
+                    control={
+                      <Switch
+                        size='small'
+                        checked={selectedFeatures.includes(feature.key)}
+                        onChange={() => toggleFeature(feature.key)}
+                      />
+                    }
+                    label={
+                      <Box className='flex items-center gap-1'>
+                        <i className={`${feature.icon} text-base text-textSecondary`} />
+                        <Typography variant='body2' className='capitalize'>
+                          {feature.labelKey}
+                        </Typography>
+                      </Box>
+                    }
                   />
-                }
-                label={<Typography fontWeight={600}>Full Access (all features)</Typography>}
-              />
-
-              {!fullAccess && (
-                <Box className='grid grid-cols-2 sm:grid-cols-3 gap-1 mt-2 pl-2'>
-                  {SIDEBAR_FEATURES.map(feature => (
-                    <FormControlLabel
-                      key={feature.key}
-                      control={
-                        <Switch
-                          size='small'
-                          checked={selectedFeatures.includes(feature.key)}
-                          onChange={() => toggleFeature(feature.key)}
-                        />
-                      }
-                      label={
-                        <Box className='flex items-center gap-1'>
-                          <i className={`${feature.icon} text-base text-textSecondary`} />
-                          <Typography variant='body2' className='capitalize'>
-                            {feature.labelKey}
-                          </Typography>
-                        </Box>
-                      }
-                    />
-                  ))}
-                </Box>
-              )}
+                ))}
+              </Box>
             </Grid>
           </Grid>
 

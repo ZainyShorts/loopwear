@@ -94,7 +94,10 @@ const VerticalMenu = ({ dictionary, scrollMenu }: Props) => {
       >
         <MenuSection label="">
           {SIDEBAR_FEATURES.map((feature) => {
-            if (!hasAccess(effectivePermissions, feature.key)) return null
+            // ownerOnly items (e.g. Users) are hidden from sub-users
+            if (feature.ownerOnly && !isOwner) return null
+            // alwaysAllowed items are shown to everyone regardless of permissions
+            if (!feature.alwaysAllowed && !hasAccess(effectivePermissions, feature.key)) return null
 
             return (
               <MenuItem

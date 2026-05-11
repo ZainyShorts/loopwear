@@ -3,21 +3,30 @@ export interface SidebarFeature {
   labelKey: string
   icon: string
   getHref: (locale: string, businessId?: string | null) => string
+  /** Always visible and accessible — never permission-gated, never shown in permission dialogs */
+  alwaysAllowed?: boolean
+  /** Only shown to business owners, not sub-users */
+  ownerOnly?: boolean
 }
 
 export const SIDEBAR_FEATURES: SidebarFeature[] = [
+  // ── Permanent (always accessible, not configurable)
   {
     key: 'home',
     labelKey: 'home',
     icon: 'tabler-smart-home',
     getHref: (locale) => `/${locale}/home`,
+    alwaysAllowed: true,
   },
   {
     key: 'users',
     labelKey: 'users',
     icon: 'tabler-users',
     getHref: (locale) => `/${locale}/users`,
+    alwaysAllowed: true,
+    ownerOnly: true,
   },
+  // ── Configurable (sub-user permission toggles apply to these)
   {
     key: 'menu',
     labelKey: 'menu',
@@ -66,10 +75,15 @@ export const SIDEBAR_FEATURES: SidebarFeature[] = [
     icon: 'tabler-bell',
     getHref: (locale) => `/${locale}/notifications`,
   },
+  // ── Settings — always accessible, not configurable
   {
     key: 'settings',
     labelKey: 'settings',
     icon: 'tabler-settings',
     getHref: (locale) => `/${locale}/account-settings`,
+    alwaysAllowed: true,
   },
 ]
+
+/** Only the features that can be toggled per sub-user */
+export const CONFIGURABLE_FEATURES = SIDEBAR_FEATURES.filter(f => !f.alwaysAllowed && !f.ownerOnly)

@@ -32,21 +32,19 @@ const PermissionGuard = ({ children }: Props) => {
     // Extract locale segment from pathname: /en/menu → "en"
     const locale = pathname.split('/')[1] ?? 'en'
 
-    // Match the current path to a SIDEBAR_FEATURES entry.
-    // We build a base path from getHref and check startsWith so that
-    // sub-routes (e.g. /en/users/42) are covered by their parent feature.
+    // Only check permission for configurable features (not alwaysAllowed / ownerOnly)
     const matchedFeature = SIDEBAR_FEATURES.find(feature => {
-      // Strip trailing slash and any dynamic tail (inbox has /${businessId})
+      if (feature.alwaysAllowed || feature.ownerOnly) return false
       const base = feature
-        .getHref(locale, '')           // pass empty string for businessId
-        .replace(/\/$/, '')            // strip trailing slash
+        .getHref(locale, '')
+        .replace(/\/$/, '')
       return pathname.startsWith(base)
     })
 
-    // Path doesn't correspond to any sidebar feature → allow (e.g. profile pages)
+    // Path isn't a permission-controlled feature → allow
     if (!matchedFeature) return
 
-    // If the user lacks permission for this feature → send to login
+    // Redirect if user lacks access
     if (!hasAccess(permissions, matchedFeature.key)) {
       router.replace(`/${locale}/login`)
     }

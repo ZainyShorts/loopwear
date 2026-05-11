@@ -51,7 +51,6 @@ import { useSettings } from "@core/hooks/useSettings"
 import type { LoginUser } from "@/api/interface/userInterface"
 import { loginUser } from "@/api/user"
 import { useAuthStore } from "@/store/authStore"
-import { SIDEBAR_FEATURES } from "@/libs/rbac/sidebarFeatures"
 import { useUserPermissionsStore } from "@/libs/rbac/userPermissionsStore"
 import { getBaseUrl } from "../api/vars/vars"
 import { getAllBusiness } from "@/api/business"
@@ -449,20 +448,10 @@ const Login = ({ mode }: { mode: SystemMode }) => {
       const isSubUser = !!data.user?.businessownerId
 
       if (isSubUser) {
-        // Sub-user: save permissions locally then go to their first allowed page
+        // Sub-user: save permissions locally then redirect to home (always accessible)
         const permissions: string[] = data.user.permissions ?? []
         setUserPermissions(data.user.id, permissions)
-
-        const hasFullAccess = permissions.length === 0 || permissions.includes('*')
-        if (hasFullAccess) {
-          router.push(getLocalizedUrl("/home", locale))
-        } else {
-          const firstFeature = SIDEBAR_FEATURES.find(f => permissions.includes(f.key))
-          const path = firstFeature
-            ? firstFeature.getHref(locale as string)
-            : getLocalizedUrl("/home", locale)
-          router.push(path)
-        }
+        router.push(getLocalizedUrl("/home", locale))
       } else if (data.user.subscription === false && userType === 1) {
         // Business owner with no subscription → billing page
         router.push(getLocalizedUrl("/account-settings", locale))
