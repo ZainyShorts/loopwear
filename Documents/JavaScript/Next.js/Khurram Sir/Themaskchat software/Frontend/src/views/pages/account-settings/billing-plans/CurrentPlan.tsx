@@ -300,8 +300,8 @@ const CurrentPlan = () => {
       await fetchTransactionDetails()
       setShowRenewModal(false)
     } catch (err) {
-      alert("Error reactivating subscription: " + (err instanceof Error ? err.message : "Unknown error"))
       console.error(err)
+      alert("Error reactivating subscription: " + (err instanceof Error ? err.message : "Unknown error"))
     } finally {
       setActionLoading(false)
     }

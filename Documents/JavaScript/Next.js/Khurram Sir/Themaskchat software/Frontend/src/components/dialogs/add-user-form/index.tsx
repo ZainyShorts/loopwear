@@ -73,7 +73,7 @@ const AddUserForm = ({ open, setOpen, onTypeAdded }: AddUserFormProps) => {
       ...data,
       status: 'Active',
       user_type: 3,
-      businessownerId: user?.id,
+      businessownerId: user?.businessownerId ?? user?.id,
       subscription: true,
       permissions,
     }

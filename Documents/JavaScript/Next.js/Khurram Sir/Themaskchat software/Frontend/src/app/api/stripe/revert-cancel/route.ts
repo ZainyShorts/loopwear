@@ -6,6 +6,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string)
 
 export async function POST(req: NextRequest) {
   try {
+    console.log('trigger')
     const body = await req.json()
     const { subscription_id } = body
 

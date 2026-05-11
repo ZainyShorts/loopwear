@@ -48,6 +48,13 @@ import DialogTitle from "@mui/material/DialogTitle"
 import DialogContent from "@mui/material/DialogContent"
 import DialogActions from "@mui/material/DialogActions"
 import Checkbox from "@mui/material/Checkbox"
+import InboxTeamDialog from "@/components/dialogs/inbox-team-dialog"
+import { useAuthStore } from "@/store/authStore"
+import { getAllUsers } from "@/api/user"
+import Menu from "@mui/material/Menu"
+import MuiMenuItem from "@mui/material/MenuItem"
+import Tooltip from "@mui/material/Tooltip"
+import Divider from "@mui/material/Divider"
 import { useBusinessNotifications } from "@/customHooks/useBusinessNotifications"
 import { formatMessageTime } from "@/utils/dateUtils"
 import { useParams, useSearchParams } from "next/navigation"
@@ -218,7 +225,15 @@ export default function InboxPage({
   const [deleteAllConfirmOpen, setDeleteAllConfirmOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [business, setBusiness] = useState()
+  const [teamDialogOpen, setTeamDialogOpen] = useState(false)
   const currentPageRef = useRef<number>(0)
+
+  const { user: authUser } = useAuthStore()
+  const isOwner = authUser && !authUser.businessownerId
+
+  // Sub-users for direct chat assignment (owner only)
+  const [subUsers, setSubUsers] = useState<{ id: number; name: string; email: string }[]>([])
+  const [assignMenuAnchor, setAssignMenuAnchor] = useState<{ el: HTMLElement; customerId: number } | null>(null)
 
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -423,6 +438,32 @@ export default function InboxPage({
   useEffect(() => {
     fetchCustomers(page, searchQuery)
   }, [fetchCustomers, page])
+
+  // Load sub-users list for owner (used in direct chat assignment)
+  useEffect(() => {
+    if (!isOwner) return
+    getAllUsers().then(res => {
+      const raw = res?.data?.results ?? res?.data ?? res?.results ?? res ?? []
+      const list = (Array.isArray(raw) ? raw : []).filter((u: any) => u.businessownerId != null && u.businessownerId !== '')
+      setSubUsers(list.map((u: any) => ({
+        id: u.id,
+        name: `${u.first_name ?? ''} ${u.last_name ?? ''}`.trim() || u.email,
+        email: u.email,
+      })))
+    }).catch(() => {})
+  }, [isOwner])
+
+  const handleAssignCustomer = async (customerId: number, userId: number | null) => {
+    try {
+      await inboxApi.assignCustomerToUser(customerId, userId)
+      setCustomers(prev => prev.map(c => c.id === customerId ? { ...c, assigned_to: userId } : c))
+      toast.success(userId ? 'Chat assigned' : 'Assignment removed')
+    } catch {
+      toast.error('Failed to assign chat')
+    } finally {
+      setAssignMenuAnchor(null)
+    }
+  }
 
     const {
     notifications,
@@ -863,7 +904,7 @@ export default function InboxPage({
   const CustomerListContent = () => (
     <>
       {/* Search Header */}
-      <Box className="p-4 border-b">
+      <Box className="p-4 border-b flex flex-col gap-2">
         <TextField
           fullWidth
           size="small"
@@ -878,6 +919,17 @@ export default function InboxPage({
             ),
           }}
         />
+        {isOwner && (
+          <Button
+            size="small"
+            variant="tonal"
+            startIcon={<i className="tabler-users-group" />}
+            onClick={() => setTeamDialogOpen(true)}
+            fullWidth
+          >
+            Manage Teams
+          </Button>
+        )}
       </Box>
 
       {/* Customer List */}
@@ -911,11 +963,24 @@ export default function InboxPage({
               }
 
               return (
-                <ListItem key={customer.id} disablePadding>
+                <ListItem key={customer.id} disablePadding
+                  secondaryAction={isOwner ? (
+                    <Tooltip title={customer.assigned_to ? 'Reassign chat' : 'Assign to user'}>
+                      <IconButton
+                        size="small"
+                        onClick={e => { e.stopPropagation(); setAssignMenuAnchor({ el: e.currentTarget, customerId: customer.id }) }}
+                        sx={{ color: customer.assigned_to ? 'primary.main' : 'text.disabled' }}
+                      >
+                        <i className="tabler-user-check text-sm" />
+                      </IconButton>
+                    </Tooltip>
+                  ) : undefined}
+                >
                   <ListItemButton
                     selected={selectedCustomer?.id === customer.id}
                     onClick={() => handleCustomerSelect(customer)}
                     className="px-4 py-3"
+                    sx={{ paddingRight: isOwner ? '48px' : undefined }}
                   >
                     <ListItemAvatar>
                       <Avatar>{customer.name?.charAt(0) || "?"}</Avatar>
@@ -1004,6 +1069,37 @@ console.log('customer.latest_message',type)
           </List>
         )}
       </Box>
+
+      {/* Direct assignment menu (owner only) */}
+      <Menu
+        open={Boolean(assignMenuAnchor)}
+        anchorEl={assignMenuAnchor?.el}
+        onClose={() => setAssignMenuAnchor(null)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        <MuiMenuItem disabled>
+          <Typography variant="caption" color="text.secondary">Assign to</Typography>
+        </MuiMenuItem>
+        {subUsers.map(u => (
+          <MuiMenuItem
+            key={u.id}
+            onClick={() => assignMenuAnchor && handleAssignCustomer(assignMenuAnchor.customerId, u.id)}
+            selected={assignMenuAnchor
+              ? customers.find(c => c.id === assignMenuAnchor.customerId)?.assigned_to === u.id
+              : false}
+          >
+            <Box>
+              <Typography variant="body2">{u.name}</Typography>
+              <Typography variant="caption" color="text.secondary">{u.email}</Typography>
+            </Box>
+          </MuiMenuItem>
+        ))}
+        <Divider />
+        <MuiMenuItem onClick={() => assignMenuAnchor && handleAssignCustomer(assignMenuAnchor.customerId, null)}>
+          <Typography variant="body2" color="error">Remove assignment</Typography>
+        </MuiMenuItem>
+      </Menu>
 
       <Box className="border-t p-0">
         <TablePagination
@@ -1989,6 +2085,14 @@ const TemplateContent = styled(Box)(({ theme }) => ({
       </Dialog>
 
       <VideoModalWrapper />
+
+      {isOwner && (
+        <InboxTeamDialog
+          open={teamDialogOpen}
+          onClose={() => setTeamDialogOpen(false)}
+          customers={customers}
+        />
+      )}
     </>
   )
 }

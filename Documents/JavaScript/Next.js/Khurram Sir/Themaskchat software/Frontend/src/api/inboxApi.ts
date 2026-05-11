@@ -21,6 +21,23 @@ export interface ApiCustomer {
   assigned_to: number | null
 }
 
+export interface InboxTeamMember {
+  id: number
+  user: number
+  user_name: string
+  user_email: string
+}
+
+export interface InboxTeam {
+  id: number
+  name: string
+  platforms: string[]
+  assign_all: boolean
+  members: InboxTeamMember[]
+  assigned_customer_ids: number[]
+  created_at: string
+}
+
 export interface ApiMessage {
   id: number
   sender: "business" | "user"
@@ -161,6 +178,74 @@ export const inboxApi = {
       throw new Error(`Failed to fetch customer count: ${response.statusText}`)
     }
 
+    return response.json()
+  },
+
+  // Assign a customer directly to a sub-user (or unassign with null)
+  assignCustomerToUser: async (customerId: number, userId: number | null): Promise<ApiCustomer> => {
+    const response = await fetch(`${API_BASE_URL}/customer/${customerId}/`, {
+      method: 'PATCH',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ assigned_to: userId }),
+    })
+    if (!response.ok) throw new Error('Failed to assign customer')
+    return response.json()
+  },
+
+  // ─── Inbox Teams ───────────────────────────────────────────
+  listTeams: async (): Promise<InboxTeam[]> => {
+    const response = await fetch(`${API_BASE_URL}/teams/`, {
+      method: 'GET',
+      headers: getAuthHeaders(),
+    })
+    if (!response.ok) throw new Error('Failed to fetch teams')
+    const data = await response.json()
+    return data.results ?? data
+  },
+
+  createTeam: async (payload: {
+    name: string
+    platforms: string[]
+    assign_all: boolean
+    member_ids: number[]
+  }): Promise<InboxTeam> => {
+    const response = await fetch(`${API_BASE_URL}/teams/`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload),
+    })
+    if (!response.ok) throw new Error('Failed to create team')
+    return response.json()
+  },
+
+  updateTeam: async (
+    teamId: number,
+    payload: { name: string; platforms: string[]; assign_all: boolean; member_ids: number[] },
+  ): Promise<InboxTeam> => {
+    const response = await fetch(`${API_BASE_URL}/teams/${teamId}/`, {
+      method: 'PATCH',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload),
+    })
+    if (!response.ok) throw new Error('Failed to update team')
+    return response.json()
+  },
+
+  deleteTeam: async (teamId: number): Promise<void> => {
+    const response = await fetch(`${API_BASE_URL}/teams/${teamId}/`, {
+      method: 'DELETE',
+      headers: getAuthHeaders(),
+    })
+    if (!response.ok) throw new Error('Failed to delete team')
+  },
+
+  assignCustomersToTeam: async (teamId: number, customerIds: number[]): Promise<{ success: boolean }> => {
+    const response = await fetch(`${API_BASE_URL}/teams/${teamId}/assign-customers/`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ customer_ids: customerIds }),
+    })
+    if (!response.ok) throw new Error('Failed to assign customers')
     return response.json()
   },
 
