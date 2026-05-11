@@ -23,6 +23,7 @@ export const SIDEBAR_FEATURES: SidebarFeature[] = [
     labelKey: 'users',
     icon: 'tabler-users',
     getHref: (locale) => `/${locale}/users`,
+    ownerOnly: true,
   },
   // ── Configurable (sub-user permission toggles apply to these)
   {
