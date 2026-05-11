@@ -75,13 +75,14 @@ export const SIDEBAR_FEATURES: SidebarFeature[] = [
     icon: 'tabler-bell',
     getHref: (locale) => `/${locale}/notifications`,
   },
-  // ── Settings — always accessible, not configurable
+  // ── Settings — owners only, not configurable
   {
     key: 'settings',
     labelKey: 'settings',
     icon: 'tabler-settings',
     getHref: (locale) => `/${locale}/account-settings`,
     alwaysAllowed: true,
+    ownerOnly: true,
   },
 ]
 
