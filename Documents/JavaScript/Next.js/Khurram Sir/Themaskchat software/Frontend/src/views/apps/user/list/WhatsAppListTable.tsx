@@ -1,7 +1,7 @@
 'use client'
 
 // React Imports
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useRef } from 'react'
 import Link from 'next/link'
 import { useParams, useRouter } from 'next/navigation'
 import Card from '@mui/material/Card'
@@ -37,6 +37,7 @@ import {
 import type { ColumnDef, FilterFn } from '@tanstack/react-table'
 import type { RankingInfo } from '@tanstack/match-sorter-utils'
 
+
 // Type Imports
 import type { ThemeColor } from '@core/types'
 
@@ -55,6 +56,7 @@ import { useAuthStore } from '@/store/authStore'
 import { getLocalizedUrl } from '@/utils/i18n'
 import { Locale } from '@/configs/i18n'
 import ConfirmationModal from '@/components/dialogs/confirm-modal'
+import { getBaseUrl } from '@/api/vars/vars'
 declare module '@tanstack/table-core' {
   interface FilterFns {
     fuzzy: FilterFn<unknown>
@@ -121,6 +123,8 @@ const WhatsppAppListTable = ({ tableData }: { tableData?: WhatsAppDataType[] }) 
   const [addUserOpen, setAddUserOpen] = useState(false)
   const [deleteWhatssAppOpen, setDeleteWhatsAppOpen] = useState(false)
   const [editWhatsAppFlag, setEditWhatsAppFlag] = useState(false)
+  const [phoneId, setPhoneId] = useState(null)
+  const [wabaId, setWabaId] = useState(null)
 
   const [rowSelection, setRowSelection] = useState({})
 
@@ -329,6 +333,134 @@ const WhatsppAppListTable = ({ tableData }: { tableData?: WhatsAppDataType[] }) 
     getFacetedMinMaxValues: getFacetedMinMaxValues()
   })
 
+  const phoneIdRef = useRef<string | null>(null)
+  const wabaIdRef = useRef<string | null>(null)
+
+
+
+useEffect(() => {
+  if (typeof window === 'undefined') return;
+
+  // FB Init
+  (window as any).fbAsyncInit = function () {
+    (window as any).FB.init({
+      appId: '1137004620654487',
+      autoLogAppEvents: true,
+      xfbml: true,
+      version: 'v25.0',
+    });
+  };
+
+  // Load SDK (TS ignored)
+  (function (d: any, s: any, id: any) {
+  const fjs: any = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) return;
+
+  const js: any = d.createElement(s);
+  js.id = id;
+  js.src = "https://connect.facebook.net/en_US/sdk.js";
+
+  fjs?.parentNode?.insertBefore(js, fjs);
+})(document, 'script', 'facebook-jssdk');
+  // Listener
+  const handler = (event: any) => {
+    if (
+      event.origin !== "https://www.facebook.com" &&
+      event.origin !== "https://web.facebook.com"
+    ) return;
+
+    try {
+      const data = JSON.parse(event.data);
+
+      if (data.type === 'WA_EMBEDDED_SIGNUP' && data.event === 'FINISH') {
+        const { phone_number_id, waba_id } = data.data;
+
+        console.log("Phone Number ID:", phone_number_id);
+        console.log("WABA ID:", waba_id);
+
+        phoneIdRef.current = phone_number_id;
+        wabaIdRef.current = waba_id;
+
+        setPhoneId(phone_number_id);
+        setWabaId(waba_id);
+      }
+    } catch (e) {
+      console.log('Non JSON response', event.data);
+    }
+  };
+
+  window.addEventListener('message', handler);
+
+  return () => {
+    window.removeEventListener('message', handler);
+  };
+}, []);
+
+    const fbLoginCallback = (response: any) => {
+
+  console.log("FB Login Response:", response)
+
+  if (response.authResponse) {
+
+    const code = response.authResponse.code
+
+    const phoneId = phoneIdRef.current
+    const wabaId = wabaIdRef.current
+
+    if (code && phoneId && wabaId) {
+      sendToBackend(code) // 👈 no await here
+    }
+  }
+}
+
+    // Launch Embedded Signup
+    const launchWhatsAppSignup = () => {
+      console.log("Launching WhatsApp Embedded Signup... 1 ");
+      (window as any).FB.login(fbLoginCallback, {
+        config_id: '930491966229859', // Your configuration ID from Meta
+        response_type: 'code',         // Required for system user access token
+        override_default_response_type: true,
+        extras: { version: "v3" }
+      });
+    };
+
+  const sendToBackend = async (signupCode: string) => {
+    console.log("Sending data to backend with signup code:4")
+    // if (!signupCode || !phoneId || !wabaId) return
+    // console.log("Sending data to backend with signup code:5", {signupCode, phoneId, wabaId})
+
+    // const accessToken = await exchangeCode(signupCode)
+    const accessToken = signupCode
+    console.log("Received access token from backend:6", accessToken)
+
+    const authToken = localStorage.getItem("auth_token")
+    console.log("Auth token from localStorage:7", authToken)
+
+    console.log("Making POST request to backend with access token, phone ID, and WABA ID:8",{
+        access_token: accessToken,
+        whatsapp_account_id: wabaIdRef.current,
+        phone_id: phoneIdRef.current
+      })
+
+    await fetch(`${getBaseUrl()}whatseat/connect/`, {
+
+      method: "POST",
+
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Token ${authToken}`
+      },
+
+      body: JSON.stringify({
+        access_token: accessToken,
+        whatsapp_account_id: wabaIdRef.current,
+        phone_id: phoneIdRef.current
+      })
+
+    })
+
+  }
+
   return (
     <>
       <ConfirmationModal
@@ -368,6 +500,15 @@ const WhatsppAppListTable = ({ tableData }: { tableData?: WhatsAppDataType[] }) 
             >
               Add WhatsApp
             </Button>
+            <Button
+              variant='contained'
+              startIcon={<i className='tabler-plus' />}
+              onClick={launchWhatsAppSignup}
+              className='is-full sm:is-auto'
+            >
+              Connect Number
+            </Button>
+            
           </div>
         </div>
 
