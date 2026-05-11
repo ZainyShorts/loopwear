@@ -17,29 +17,26 @@ import { useAuthStore } from "@/store/authStore"
 const AccountSettings = ({ tabContentList }: { tabContentList: { [key: string]: ReactElement } }) => {
   const { user } = useAuthStore()
 
-  // Check if user has subscription
-  const hasSubscription = user?.subscription !== false 
+  const isSubUser = !!user?.businessownerId
+  // Sub-users always have access (their subscription is linked to owner)
+  const hasSubscription = isSubUser || user?.subscription !== false
   const userType = Number(user?.user_type)
 
-
-  // Set initial active tab based on subscription status
-const getInitialTab = (type?: number) => { 
-  console.log("type", type , hasSubscription)
-    if (type == 1) return "account"
+  // Set initial active tab based on user type
+  const getInitialTab = (type?: number) => {
     if (type == 2) return "users"
-    return "billing-plans"
+    return "account"
   }
   // States
- const [activeTab, setActiveTab] = useState(() => getInitialTab(userType))
-  // Update active tab when subscription status changes
-   useEffect(() => {
+  const [activeTab, setActiveTab] = useState(() => getInitialTab(userType))
+  // Update active tab when user type changes
+  useEffect(() => {
     if (userType !== undefined) {
       setActiveTab(getInitialTab(userType))
     }
   }, [userType])
 
   const handleChange = (event: SyntheticEvent, value: string) => {
-    // Only allow tab change if user has subscription OR if it's the billing tab
     if (hasSubscription || value === "billing-plans") {
       setActiveTab(value)
     }
@@ -71,8 +68,8 @@ const getInitialTab = (type?: number) => {
     />
   )}
 
-  {/* Show Billing only if userType !== 2 */}
-  {userType !== 2 && (
+  {/* Show Billing only for business owners (type 1), not sub-users or support */}
+  {userType === 1 && !isSubUser && (
     <Tab
       label={
         <div className="flex items-center gap-1.5">
@@ -164,8 +161,8 @@ const getInitialTab = (type?: number) => {
 </CustomTabList>
 
 
-          {/* Optional: Show subscription notice */}
-          {!hasSubscription && (
+          {/* Show subscription notice only to owners without a subscription */}
+          {!hasSubscription && !isSubUser && (
             <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
               <div className="flex items-center gap-2 text-orange-700">
                 <i className="tabler-info-circle text-lg" />
